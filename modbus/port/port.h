@@ -24,7 +24,6 @@
 
 #include <assert.h>
 #include <uart.h>
-#include <timer.h>
 #include "FreeRTOS.h"
 #include "opt.h"
 

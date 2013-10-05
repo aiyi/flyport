@@ -26,6 +26,17 @@
 #include "mb.h"
 #include "mbport.h"
 
+#define		UART_STOP_BITS		0
+#define		UART_DATA_PARITY	1
+
+#define		UART_ONE_STOP 		0
+#define		UART_TWO_STOP		1
+
+#define		UART_8BITS_PARITY_EVEN 4
+#define		UART_8BITS_PARITY_ODD  2
+#define		UART_8BITS_PARITY_NONE	0
+#define		UART_9BITS_PARITY_NONE	6
+
 /* ----------------------- Start implementation -----------------------------*/
 void
 vMBPortSerialEnable( BOOL xRxEnable, BOOL xTxEnable )
@@ -54,10 +65,37 @@ vMBPortSerialEnable( BOOL xRxEnable, BOOL xTxEnable )
 BOOL
 xMBPortSerialInit( UCHAR ucPORT, ULONG ulBaudRate, UCHAR ucDataBits, eMBParity eParity )
 {
+	int dataParity;
+	int stopBits;
+
+	switch (eParity)
+	{
+	case MB_PAR_NONE:
+		dataParity = UART_8BITS_PARITY_NONE;
+		stopBits = UART_TWO_STOP;
+		break;
+	case MB_PAR_ODD:
+		dataParity = UART_8BITS_PARITY_ODD;
+		stopBits = UART_ONE_STOP;
+		break;
+	case MB_PAR_EVEN:
+		dataParity = UART_8BITS_PARITY_EVEN;
+		stopBits = UART_ONE_STOP;
+		break;
+	default:
+		return FALSE;
+	}
+
+	if (ucDataBits == 7)
+	{
+		dataParity = UART_8BITS_PARITY_NONE;
+		stopBits = UART_ONE_STOP;
+	}
+
 	// Initialize the RS485
 	RS485Init(ucPORT, ulBaudRate);
-	RS485SetParam(ucPORT, RS485_STOP_BITS, RS485_TWO_STOP);
-	RS485SetParam(ucPORT, RS485_DATA_PARITY, RS485_8BITS_PARITY_NONE);
+	RS485SetParam(ucPORT, RS485_STOP_BITS, stopBits);
+	RS485SetParam(ucPORT, RS485_DATA_PARITY, dataParity);
 	RS485On(ucPORT);
     return TRUE;
 }

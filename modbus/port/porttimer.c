@@ -42,7 +42,6 @@ inline void
 vMBPortTimersEnable(  )
 {
     /* Enable the timer with the timeout passed to xMBPortTimersInit( ) */
-	T4CON = 0;  //turn off timer(good practise!)       
 	T4CONbits.TCKPS = 3; //clock divider=256
 	PR4 = period; //limit to raise interrupt=62500
 	TMR4 = 0; // init timer counter value
@@ -56,7 +55,7 @@ inline void
 vMBPortTimersDisable(  )
 {
     /* Disable any pending timers. */
-	CloseTimer4();
+	T4CON = 0;  //turn off timer
 }
 
 /* Create an ISR which is called whenever the timer has expired. This function
@@ -65,7 +64,7 @@ vMBPortTimersDisable(  )
  */
 void __attribute__ ((interrupt,no_auto_psv)) _T4Interrupt (void)
 {
-	T4_Clear_Intr_Status_Bit;
+	IFS1bits.T4IF = 0;
 	pxMBPortCBTimerExpired(  );
 }
 
