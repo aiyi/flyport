@@ -42,6 +42,7 @@ inline void
 vMBPortTimersEnable(  )
 {
     /* Enable the timer with the timeout passed to xMBPortTimersInit( ) */
+	T4CON = 0;  //turn off timer
 	T4CONbits.TCKPS = 3; //clock divider=256
 	PR4 = period; //limit to raise interrupt=62500
 	TMR4 = 0; // init timer counter value
