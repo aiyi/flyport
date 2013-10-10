@@ -215,12 +215,10 @@ void RS485TxEnable(int port)
 {
 	IOPut((int)wEnPin[port-1], on);
 	IOPut((int)rEnPin[port-1], on);
-	vTaskDelay(1);
 }
 
 void RS485TxDisable(int port)
 {
-	vTaskDelay(1);
 	IOPut((int)wEnPin[port-1], off);
 	IOPut((int)rEnPin[port-1], off);
 }

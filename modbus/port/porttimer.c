@@ -34,7 +34,7 @@ static unsigned int period = 0;
 BOOL
 xMBPortTimersInit( USHORT usTim1Timerout50us )
 {
-	period = ( 62500 * usTim1Timerout50us ) / ( 20000 );
+	period = ( 62500UL * usTim1Timerout50us ) / ( 20000UL );
     return TRUE;
 }
 

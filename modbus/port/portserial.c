@@ -57,6 +57,7 @@ vMBPortSerialEnable( BOOL xRxEnable, BOOL xTxEnable )
 		IFS1bits.U2TXIF = 1;
 	}
 	else {
+		while(BusyUART2());
 		RS485TxDisable(2);
 		DisableIntU2TX;
 	}
