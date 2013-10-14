@@ -1,25 +1,24 @@
 #include "MQTTClient.h"
 
 static uint16_t MQTTClient_readPacket(MQTTClient_t *this);
-static boolean MQTTClient_write(MQTTClient_t *this, uint8_t header, uint8_t* buf, uint16_t length)
+static BOOL MQTTClient_write(MQTTClient_t *this, uint8_t header, uint8_t* buf, uint16_t length);
 static uint16_t MQTTClient_writeStr(char* string, uint8_t* buf, uint16_t pos);
 
 /**
 * Creates an MQTT client ready for connection to the specified server
 *
 * Parameters
-* @domain : the DNS name of the server
+* @server : the DNS name or IP addr of the server
 * @ip : the IP address of the server
 * @port : the port to connect to
 * @callback : a pointer to a function called when a message arrives for a subscription created by this client. If no callback is required, set this to 0. See Subscription Callback.
 * @client : an instance of Client, typically EthernetClient.
 */
-void MQTTClient_init(MQTTClient_t *this, char* domain, uint8_t *ip, uint16_t port, void (*callback)(char*,uint8_t*,unsigned int), TCPClient_t *client)
+void MQTTClient_init(MQTTClient_t *this, char* server, uint16_t port, void (*callback)(char*,uint8_t*,unsigned int), TCPClient_t *client)
 {
    this->_client = client;
    this->callback = callback;
-   this->domain = domain;
-   this->ip = ip;
+   this->server = server;
    this->port = port;
 }
 
@@ -36,15 +35,15 @@ void MQTTClient_init(MQTTClient_t *this, char* domain, uint8_t *ip, uint16_t por
 * @willMessage : the payload of the will message 
 
 * Returns
-*  false – connection failed.
-*  true – connection succeeded.
+*  false - connection failed.
+*  true -connection succeeded.
 */
-boolean MQTTClient_connect(MQTTClient_t *this, char *id, char *user, char *pass, char* willTopic, uint8_t willQos, uint8_t willRetain, char* willMessage)
+BOOL MQTTClient_connect(MQTTClient_t *this, char *id, char *user, char *pass, char* willTopic, uint8_t willQos, uint8_t willRetain, char* willMessage)
 {
    if (!MQTTClient_connected(this)) {
       TCPClient_t *client = this->_client;
       uint8_t *buffer = this->buffer;
-      int result = TCPClient_connect(this->_client, this->domain, this->ip, this->port);
+      int result = TCPClient_connect(client, this->server, this->port);
 		
       if (result) {
          this->nextMsgId = 1;
@@ -90,57 +89,80 @@ boolean MQTTClient_connect(MQTTClient_t *this, char *id, char *user, char *pass,
          
          MQTTClient_write(this,MQTTCONNECT,buffer,length-5);
          
-         this->lastInActivity = this->lastOutActivity = millis();
+         this->lastInActivity = this->lastOutActivity = tickGetSeconds();
          
-         while (!client->available()) {
-            unsigned long t = millis();
-            if (this->lastInActivity > MQTT_KEEPALIVE*1000UL) {
-               client->stop();
-               return false;
+         while (!TCPClient_available(client)) {
+            unsigned long t = tickGetSeconds();
+            if (t - this->lastInActivity > MQTT_KEEPALIVE) {
+               TCPClient_stop(client);
+               return FALSE;
             }
          }
          uint16_t len = MQTTClient_readPacket(this);
-         
+         ///////
+        char temp[16];
+		sprintf(temp, "---%02x %02x %02x %02x\r\n", buffer[0],buffer[1],buffer[2],buffer[3]);
+		UARTWrite(1, temp);	
+         /////
          if (len == 4 && buffer[3] == 0) {
-            this->lastInActivity = millis();
-            this->pingOutstanding = false;
-            return true;
+            this->lastInActivity = tickGetSeconds();
+            this->pingOutstanding = FALSE;
+            return TRUE;
          }
       }
-      client->stop();
    }
-   return false;
+   return FALSE;
 }
 
-static uint8_t MQTTClient_readByte(MQTTClient_t *this)
+static uint8_t MQTTClient_readByte(MQTTClient_t *this, int *err)
 {
-   while(!this->_client->available()) {}
-   return this->_client->read();
+   int data = TCPClient_readByte(this->_client);
+   if (data == -1) {
+	   unsigned long t = tickGetSeconds();
+	   while(!TCPClient_available(this->_client)) {
+	      if (tickGetSeconds() - t > 1) {
+	   		*err = 1;
+			return 0;
+	      }
+	   }
+	   data = TCPClient_readByte(this->_client);
+   }
+   
+   return (uint8_t)data;
 }
 
 static uint16_t MQTTClient_readPacket(MQTTClient_t *this)
 {
    uint8_t *buffer = this->buffer;
    uint16_t len = 0;
-   buffer[len++] = MQTTClient_readByte(this);
    uint8_t multiplier = 1;
    uint16_t length = 0;
    uint8_t digit = 0;
+   uint16_t i;
+   int err = 0;
+
+   buffer[len++] = MQTTClient_readByte(this, &err);
+   
    do {
-      digit = MQTTClient_readByte(this);
+      digit = MQTTClient_readByte(this, &err);
+      if (err)
+         return 0;
       buffer[len++] = digit;
       length += (digit & 127) * multiplier;
       multiplier *= 128;
    } while ((digit & 128) != 0);
    
-   for (uint16_t i = 0;i<length;i++)
+   for (i = 0;i<length;i++)
    {
       if (len < MQTT_MAX_PACKET_SIZE) {
-         buffer[len++] = MQTTClient_readByte(this);
+         buffer[len++] = MQTTClient_readByte(this, &err);
       } else {
-         MQTTClient_readByte(this);
+         MQTTClient_readByte(this, &err);
          len = 0; // This will cause the packet to be ignored.
       }
+
+	  if (err)
+         return 0;
    }
 
    return len;
@@ -150,29 +172,30 @@ static uint16_t MQTTClient_readPacket(MQTTClient_t *this)
 * This should be called regularly to allow the client to process incoming messages and maintain its connection to the server.
 *
 * Returns
-*  false – the client is no longer connected
-*  true – the client is still connected
+*  false - the client is no longer connected
+*  true - the client is still connected
 */
-boolean MQTTClient_loop(MQTTClient_t *this)
+BOOL MQTTClient_loop(MQTTClient_t *this)
 {
    uint8_t *buffer = this->buffer;
    if (MQTTClient_connected(this)) {
-      unsigned long t = millis();
-      if ((t - this->lastInActivity > MQTT_KEEPALIVE*1000UL) || (t - this->lastOutActivity > MQTT_KEEPALIVE*1000UL)) {
+      unsigned long t = tickGetSeconds();
+      if ((t - this->lastInActivity > MQTT_KEEPALIVE) || (t - this->lastOutActivity > MQTT_KEEPALIVE)) {
          if (this->pingOutstanding) {
-            this->_client->stop();
-            return false;
+            TCPClient_stop(this->_client);
+            return FALSE;
          } else {
             buffer[0] = MQTTPINGREQ;
             buffer[1] = 0;
-            this->_client->write(buffer,2);
+            if (0 == TCPClient_write(this->_client, buffer, 2))
+			   return FALSE;
             this->lastOutActivity = t;
             this->lastInActivity = t;
-            this->pingOutstanding = true;
+            this->pingOutstanding = TRUE;
          }
       }
-      if (this->_client->available()) {
-         uint16_t len = readPacket();
+      if (TCPClient_available(this->_client)) {
+         uint16_t len = MQTTClient_readPacket(this);
          if (len > 0) {
             this->lastInActivity = t;
             uint8_t type = buffer[0]&0xF0;
@@ -180,7 +203,8 @@ boolean MQTTClient_loop(MQTTClient_t *this)
                if (this->callback) {
                   uint16_t tl = (buffer[2]<<8)+buffer[3];
                   char topic[tl+1];
-                  for (uint16_t i=0;i<tl;i++) {
+				  uint16_t i;
+                  for (i=0;i<tl;i++) {
                      topic[i] = buffer[4+i];
                   }
                   topic[tl] = 0;
@@ -189,17 +213,26 @@ boolean MQTTClient_loop(MQTTClient_t *this)
                   this->callback(topic,payload,len-4-tl);
                }
             } else if (type == MQTTPINGREQ) {
+            	///////
+				UARTWrite(1, "---MQTTPINGREQ\r\n");
+			    /////
                buffer[0] = MQTTPINGRESP;
                buffer[1] = 0;
-               _client->write(buffer,2);
+               if (0 == TCPClient_write(this->_client,buffer,2))
+			      return FALSE;
             } else if (type == MQTTPINGRESP) {
-               this->pingOutstanding = false;
+               this->pingOutstanding = FALSE;
+			    ///////
+				UARTWrite(1, "---MQTTPINGRESP\r\n");
+			    /////
+            } else {
+               TCPClient_flush(this->_client);
             }
          }
       }
-      return true;
+      return TRUE;
    }
-   return false;
+   return FALSE;
 }
 
 /**
@@ -207,17 +240,17 @@ boolean MQTTClient_loop(MQTTClient_t *this)
 * The message is published at QoS 0.
 
 * Parameters
-* @topic – the topic to publish to
-* @payload – the message to publish
-* @length – the length of the message
-* @retained – whether the message should be retained
-*  0 – not retained
-*  1 – retained
+* @topic : the topic to publish to
+* @payload : the message to publish
+* @length : the length of the message
+* @retained : whether the message should be retained
+*  0 - not retained
+*  1 - retained
 * Returns
-*  false – publish failed.
-*  true – publish succeeded.
+*  false -  publish failed.
+*  true - publish succeeded.
 */
-boolean MQTTClient_publish(MQTTClient_t *this, char* topic, uint8_t* payload, unsigned int plength, boolean retained)
+BOOL MQTTClient_publish(MQTTClient_t *this, char* topic, uint8_t* payload, unsigned int plength, BOOL retained)
 {
    if (MQTTClient_connected(this)) {
       uint8_t *buffer = this->buffer;
@@ -234,10 +267,10 @@ boolean MQTTClient_publish(MQTTClient_t *this, char* topic, uint8_t* payload, un
       }
       return MQTTClient_write(this,header,buffer,length-5);
    }
-   return false;
+   return FALSE;
 }
 
-static boolean MQTTClient_write(MQTTClient_t *this, uint8_t header, uint8_t* buf, uint16_t length)
+static BOOL MQTTClient_write(MQTTClient_t *this, uint8_t header, uint8_t* buf, uint16_t length)
 {
    uint8_t lenBuf[4];
    uint8_t llen = 0;
@@ -245,6 +278,8 @@ static boolean MQTTClient_write(MQTTClient_t *this, uint8_t header, uint8_t* buf
    uint8_t pos = 0;
    uint8_t rc;
    uint8_t len = length;
+   int i;
+   
    do {
       digit = len % 128;
       len = len / 128;
@@ -256,12 +291,12 @@ static boolean MQTTClient_write(MQTTClient_t *this, uint8_t header, uint8_t* buf
    } while(len>0);
 
    buf[4-llen] = header;
-   for (int i=0;i<llen;i++) {
+   for (i=0;i<llen;i++) {
       buf[5-llen+i] = lenBuf[i];
    }
-   rc = this->_client->write(buf+(4-llen),length+1+llen);
+   rc = TCPClient_write(this->_client,buf+(4-llen),length+1+llen);
    
-   this->lastOutActivity = millis();
+   this->lastOutActivity = tickGetSeconds();
    return (rc == 1+llen+length);
 }
 
@@ -269,28 +304,28 @@ static boolean MQTTClient_write(MQTTClient_t *this, uint8_t header, uint8_t* buf
 * Subscribes to messages published to the specified topic.
 
 * Parameters
-* @topic – the topic to publish to
+* @topic  : the topic to publish to
 * Returns
-*  false – sending the subscribe failed.
-*  true – sending the subscribe succeeded. The request completes asynchronously.
+*  false - sending the subscribe failed.
+*  true - sending the subscribe succeeded. The request completes asynchronously.
 */
-boolean MQTTClient_subscribe(MQTTClient_t *this, char* topic)
+BOOL MQTTClient_subscribe(MQTTClient_t *this, char* topic)
 {
    if (MQTTClient_connected(this)) {
       uint8_t *buffer = this->buffer;
       // Leave room in the buffer for header and variable length field
       uint16_t length = 7;
-      nextMsgId++;
-      if (nextMsgId == 0) {
-         nextMsgId = 1;
+      this->nextMsgId++;
+      if (this->nextMsgId == 0) {
+         this->nextMsgId = 1;
       }
-      buffer[0] = (nextMsgId >> 8);
-      buffer[1] = (nextMsgId & 0xFF);
+      buffer[0] = (this->nextMsgId >> 8);
+      buffer[1] = (this->nextMsgId & 0xFF);
       length = MQTTClient_writeStr(topic, buffer,length);
       buffer[length++] = 0; // Only do QoS 0 subs
       return MQTTClient_write(this,MQTTSUBSCRIBE|MQTTQOS1,buffer,length-5);
    }
-   return false;
+   return FALSE;
 }
 
 /**
@@ -298,11 +333,13 @@ boolean MQTTClient_subscribe(MQTTClient_t *this, char* topic)
 */
 void MQTTClient_disconnect(MQTTClient_t *this)
 {
+   if (!TCPClient_connected(this->_client))
+      return;
    this->buffer[0] = MQTTDISCONNECT;
    this->buffer[1] = 0;
-   this->_client->write(this->buffer,2);
-   this->_client->stop();
-   this->lastInActivity = this->lastOutActivity = millis();
+   TCPClient_write(this->_client,this->buffer,2);
+   TCPClient_stop(this->_client);
+   this->lastInActivity = this->lastOutActivity = tickGetSeconds();
 }
 
 static uint16_t MQTTClient_writeStr(char* string, uint8_t* buf, uint16_t pos)
@@ -323,13 +360,11 @@ static uint16_t MQTTClient_writeStr(char* string, uint8_t* buf, uint16_t pos)
 * Checks whether the client is connected to the server.
 
 * Returns
-*  false – the client is no longer connected
-*  true – the client is still connected
+*  false - the client is no longer connected
+*  true - the client is still connected
 */
-boolean MQTTClient_connected(MQTTClient_t *this)
+BOOL MQTTClient_connected(MQTTClient_t *this)
 {
-   int rc = (int)this->_client->connected();
-   if (!rc) this->_client->stop();
-   return rc;
+   return TCPClient_connected(this->_client);
 }
 

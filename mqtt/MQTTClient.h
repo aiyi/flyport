@@ -2,12 +2,17 @@
 #define MQTTCLIENT_H
 
 #include "TCPClient.h"
+#include "opt.h"
 
 // MQTT_MAX_PACKET_SIZE : Maximum packet size
-#define MQTT_MAX_PACKET_SIZE 128
+#ifndef MQTT_MAX_PACKET_SIZE
+#define MQTT_MAX_PACKET_SIZE 512
+#endif
 
 // MQTT_KEEPALIVE : keepAlive interval in Seconds
-#define MQTT_KEEPALIVE 15
+#ifndef MQTT_KEEPALIVE
+#define MQTT_KEEPALIVE 30UL
+#endif
 
 #define MQTTPROTOCOLVERSION 3
 #define MQTTCONNECT     1 << 4  // Client request to connect to Server
@@ -37,19 +42,18 @@ typedef struct MQTTClient
    uint16_t nextMsgId;
    unsigned long lastOutActivity;
    unsigned long lastInActivity;
-   bool pingOutstanding;
+   BOOL pingOutstanding;
    void (*callback)(char*,uint8_t*,unsigned int);
-   uint8_t *ip;
-   char* domain;
+   char* server;
    uint16_t port;
 } MQTTClient_t;
 
-void MQTTClient_init(char*, uint16_t, void(*)(char*,uint8_t*,unsigned int),TCPClient *);
-boolean MQTTClient_connect(char *, char *, char *, char *, uint8_t, uint8_t, char*);
-void MQTTClient_disconnect();
-boolean MQTTClient_publish(char *, uint8_t *, unsigned int, boolean);
-boolean MQTTClient_subscribe(char *);
-boolean MQTTClient_loop();
-boolean MQTTClient_connected();
+void MQTTClient_init(MQTTClient_t *, char*, uint16_t, void(*)(char*,uint8_t*,unsigned int),TCPClient_t *);
+BOOL MQTTClient_connect(MQTTClient_t *, char *, char *, char *, char *, uint8_t, uint8_t, char*);
+void MQTTClient_disconnect(MQTTClient_t *);
+BOOL MQTTClient_publish(MQTTClient_t *, char *, uint8_t *, unsigned int, BOOL);
+BOOL MQTTClient_subscribe(MQTTClient_t *, char *);
+BOOL MQTTClient_loop(MQTTClient_t *);
+BOOL MQTTClient_connected(MQTTClient_t *);
 
 #endif
