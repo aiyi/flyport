@@ -1,28 +1,51 @@
 #include "TCPClient.h"
+#include "hilo.h"
 #include "GSMData.h"
+
+extern GSMModule mainGSM;
+extern int mainGSMStateMachine;
 
 void TCPClient_init(TCPClient_t *this)
 {
 	this->sock.number = INVALID_SOCKET;
 	this->size = 0;
 	this->idx = 0;
-	this->lastCheck = 0;
+	this->retries = 0;
 }
 
-static int TCPClient_status(TCPClient_t *this)
+static inline void RequestReset()
+{
+	mainGSMStateMachine = SM_GSM_HW_FAULT;
+}
+
+static inline BOOL ModuleOnReset()
+{
+	return (mainGSM.HWReady == FALSE || mainGSMStateMachine == SM_GSM_HW_FAULT);
+}
+
+static void TCPHandleError(TCPClient_t *this)
+{
+	if (mainGSMStateMachine == SM_GSM_HW_FAULT)
+		this->sock.number = INVALID_SOCKET;
+	else
+		TCPClient_stop(this);
+}
+
+static inline BOOL TCPInvalidSocket(TCPClient_t *this)
+{
+	return (this->sock.number == INVALID_SOCKET);
+}
+
+static int TCPCheckStatus(TCPClient_t *this)
 {
 	int len = 0;
 
 	if (this->size > 0)
 		return this->size;
 
-	if (this->sock.number == INVALID_SOCKET)
+	if (TCPInvalidSocket(this))
 		return -1;
 
-	if (tickGetSeconds() - this->lastCheck < 1UL)
-		return 0;
-
-	UARTWrite(1, "Updating Socket Status...\r\n");
 	TCPStatus(&this->sock);
 	
 	while(LastExecStat() == OP_EXECUTION)
@@ -30,7 +53,7 @@ static int TCPClient_status(TCPClient_t *this)
 	if(LastExecStat() != OP_SUCCESS)
 	{
 		UARTWrite(1, "Errors on updating TCPStatus!\r\n");
-		this->sock.number = INVALID_SOCKET;
+		TCPHandleError(this);
 		return -1;
 	}
 	else
@@ -38,17 +61,21 @@ static int TCPClient_status(TCPClient_t *this)
 		len = this->sock.rxLen;
 		if (len != 0 || this->sock.status != 3) 
 		{
-			char temp[8];
-			UARTWrite(1, " Status:");
-			sprintf(temp, "%d, ", this->sock.status);
-			UARTWrite(1, temp);
-			UARTWrite(1, "RxLen:");
-			sprintf(temp, "%d\r\n", len);
-			UARTWrite(1, temp);
+			sprintf(this->tmp, "Status:%d, ", this->sock.status);
+			UARTWrite(1, this->tmp);
+			sprintf(this->tmp, "RxLen:%d\r\n", len);
+			UARTWrite(1, this->tmp);
+			
+			if (this->sock.status == 5) {
+				TCPClient_stop(this);
+				return -1;
+			}
 		}
 	}
 
 	if (len > 0) {
+		if (len > TCP_MAX_BUF_SIZE)
+			len = TCP_MAX_BUF_SIZE;
 		TCPRead(&this->sock, this->buff, len);
 		
 		while(LastExecStat() == OP_EXECUTION)
@@ -56,18 +83,16 @@ static int TCPClient_status(TCPClient_t *this)
 		if(LastExecStat() != OP_SUCCESS)
 		{
 			UARTWrite(1, "Errors on reading TCP buffer!\r\n");	
-			this->sock.number = INVALID_SOCKET;
+			TCPHandleError(this);
 			return -1;
-		}	
+		}
+
+		this->size = len;
+		this->idx = 0;
 	}
 	
-	this->size = len;
-	this->idx = 0;
-	this->lastCheck = tickGetSeconds();
 	return len;
 }
-
-extern GSMModule mainGSM;
 
 /**
 * Connects to a specified IP address and port. 
@@ -77,26 +102,37 @@ extern GSMModule mainGSM;
 BOOL TCPClient_connect(TCPClient_t *this, char *server, uint16_t port)
 {
 	TCPClient_init(this);
-	
+
 	while (1) 
 	{
-		char temp[8];
-		this->sock.number = INVALID_SOCKET;
 		vTaskDelay(100);
-		if(mainGSM.HWReady != TRUE)
+		if (this->retries++ > 10) {
+			this->retries = 0;
+			RequestReset();
+		}
+		if (ModuleOnReset()) {
+			UARTWrite(1, "GPRS hardware not ready\r\n");
 			continue;
+		}
+	    if ((LastConnStatus() != REG_SUCCESS) && (LastConnStatus() != ROAMING)) {
+			UARTWrite(1, "Wait for GPRS Connection\r\n");
+	    	continue;
+	    }
 		
-		UARTWrite(1, "\r\n\r\nSetup APN params\r\n");
+		UARTWrite(1, "\r\nSetup APN params\r\n");
 		APNConfig("cmnet", "", "", DYNAMIC_IP, DYNAMIC_IP, DYNAMIC_IP);
 		
 		while(LastExecStat() == OP_EXECUTION)
 			vTaskDelay(1);
-		if(LastExecStat() != OP_SUCCESS)
+		if(LastExecStat() != OP_SUCCESS) {
+			UARTWrite(1, "Errors on APNConfig function!\r\n");	
 			continue;
-
-		UARTWrite(1, "Connecting to TCP Server...");
-		sprintf(temp, "%d", port);
-		TCPClientOpen(&this->sock, server, temp);
+		}
+		
+		UARTWrite(1, "Connecting to TCP Server...\r\n");
+		sprintf(this->tmp, "%d", port);
+		this->sock.number = INVALID_SOCKET;
+		TCPClientOpen(&this->sock, server, this->tmp);
 		
 		while(LastExecStat() == OP_EXECUTION)
 			vTaskDelay(1);
@@ -105,15 +141,19 @@ BOOL TCPClient_connect(TCPClient_t *this, char *server, uint16_t port)
 			UARTWrite(1, "Errors on TCPClientOpen function!\r\n");	
 			continue;
 		}
-		else
+		else if (!TCPInvalidSocket(this))
 		{
-			UARTWrite(1, "\r\n TCPClientOpen OK \r\n");
+			UARTWrite(1, "\r\nTCPClientOpen OK \r\n");
 			UARTWrite(1, "Socket Number: ");
-			sprintf(temp, "%d\r\n", this->sock.number);
-			UARTWrite(1, temp);	
+			sprintf(this->tmp, "%d\r\n", this->sock.number);
+			UARTWrite(1, this->tmp);	
+		}
+		else {
+			UARTWrite(1, "TCPClientOpen Failed!\r\n");	
+			continue;			
 		}
 
-		if (TCPClient_status(this) != -1)
+		if (TCPCheckStatus(this) != -1)
 			break;
 	}
 	
@@ -125,7 +165,7 @@ BOOL TCPClient_connect(TCPClient_t *this, char *server, uint16_t port)
 */
 void TCPClient_stop(TCPClient_t *this)
 {
-	if (this->sock.number == INVALID_SOCKET)
+	if (TCPInvalidSocket(this))
 		return;
 	
 	UARTWrite(1, "Closing socket...\r\n");
@@ -136,7 +176,7 @@ void TCPClient_stop(TCPClient_t *this)
 	if(LastExecStat() != OP_SUCCESS)
 		UARTWrite(1, "Errors on TCPClientClose!\r\n");	
 	else
-		UARTWrite(1, "Socket Closed!\r\n"); 
+		UARTWrite(1, "Socket Closed\r\n"); 
 
 	this->sock.number = INVALID_SOCKET;
 }
@@ -147,7 +187,7 @@ void TCPClient_stop(TCPClient_t *this)
 */
 int TCPClient_available(TCPClient_t *this)
 {
-	int rxlen = TCPClient_status(this);
+	int rxlen = TCPCheckStatus(this);
 	if (rxlen > 0)
 		return rxlen;
 	return 0;
@@ -159,10 +199,10 @@ int TCPClient_available(TCPClient_t *this)
 */
 int TCPClient_write(TCPClient_t *this, uint8_t *buf, int len)
 {
-	if (this->sock.number == INVALID_SOCKET)
+	if (TCPInvalidSocket(this))
 		return 0;
 
-	UARTWrite(1, "Sending data...");
+	UARTWrite(1, "Sending data...\r\n");
 	TCPWrite(&this->sock, (char*)buf, len);
 	
 	while(LastExecStat() == OP_EXECUTION)
@@ -170,18 +210,15 @@ int TCPClient_write(TCPClient_t *this, uint8_t *buf, int len)
 	if(LastExecStat() != OP_SUCCESS)
 	{
 		UARTWrite(1, "Errors sending TCP data!\r\n");	
-		this->sock.number = INVALID_SOCKET;
+		TCPHandleError(this);
 		return 0;
 	}	
 	else
 	{
-		char temp[8];
-		UARTWrite(1, "\r\n Status:");
-		sprintf(temp, "%d, ", this->sock.status);
-		UARTWrite(1, temp);
-		UARTWrite(1, "TxLen:");
-		sprintf(temp, "%d\r\n", len);
-		UARTWrite(1, temp);
+		sprintf(this->tmp, "Status:%d, ", this->sock.status);
+		UARTWrite(1, this->tmp);
+		sprintf(this->tmp, "TxLen:%d\r\n", len);
+		UARTWrite(1, this->tmp);
 	}
 	return len;
 }
@@ -219,10 +256,10 @@ int TCPClient_readByte(TCPClient_t *this)
 */
 BOOL TCPClient_connected(TCPClient_t *this)
 {
-	if (this->sock.number == INVALID_SOCKET)
+	if (TCPInvalidSocket(this))
 		return FALSE;
 
-	if (TCPClient_status(this) == -1)
+	if (TCPCheckStatus(this) == -1)
 		return FALSE;
 
 	return TRUE;
@@ -233,7 +270,7 @@ BOOL TCPClient_connected(TCPClient_t *this)
 */
 void TCPClient_flush(TCPClient_t *this)
 {
-	if (this->sock.number == INVALID_SOCKET)
+	if (TCPInvalidSocket(this))
 		return;
 
 	TCPRxFlush(&this->sock);
@@ -242,7 +279,7 @@ void TCPClient_flush(TCPClient_t *this)
 	if(LastExecStat() != OP_SUCCESS)
 	{
 		UARTWrite(1, "Errors flush socket rx buffer!\r\n");	
-		this->sock.number = INVALID_SOCKET;
+		TCPHandleError(this);
 	}
 }
 

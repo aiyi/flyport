@@ -2,20 +2,25 @@
 #define TCPCLIENT_H
 
 #include "taskFlyport.h"
+#include "opt.h"
 
 typedef unsigned char uint8_t;
 typedef unsigned short uint16_t;
 
 #define tickGetSeconds TickGetDiv64K
 
+#ifndef TCP_MAX_BUF_SIZE
+#define TCP_MAX_BUF_SIZE 512
+#endif
 
 typedef struct TCPClient 
 {
 	TCP_SOCKET sock;
-	char buff[1500];
+	char buff[TCP_MAX_BUF_SIZE];
+	char tmp[16];
 	uint16_t size;
 	uint16_t idx; 
-	unsigned long lastCheck;
+	int retries;
 } TCPClient_t;
 
 void TCPClient_init(TCPClient_t *);
