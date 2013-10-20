@@ -719,6 +719,7 @@ int cTCPRead()
 				
 				// Set tcpReadBufferCount as the effective number of BYTEs read
 				tcpReadBufferCount = rxCount;
+				xSocket->rxLen -= rxCount;
 			}
 		
 		case 8:
@@ -809,6 +810,11 @@ int cTCPWrite()
 	int countData;
 	int chars2read;
 	
+	if (xSocket->notif != -1) {
+		CheckErr(1, &smInternal, NULL);
+		return mainOpStatus.ErrorCode;
+	}
+
 	switch(smInternal)
 	{
 		case 0:
@@ -1322,6 +1328,7 @@ int cTCPRxFlush()
 					
 					// Set tcpReadBufferCount as the effective number of BYTEs read
 					tcpReadBufferCount = rxCount;
+					xSocket->rxLen -= rxCount;
 				}
 			
 			case 8:

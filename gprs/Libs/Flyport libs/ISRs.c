@@ -1,6 +1,7 @@
 #include "HWlib.h"
 #include "Hilo.h"
 #include "INTlib.h"
+#include "opt.h"
 
 extern void (*isr_int2)();
 extern void (*isr_int3)();
@@ -14,19 +15,23 @@ void __attribute__((interrupt, no_auto_psv)) _U1RXInterrupt(void)
 	UARTRxInt(1);
 }
 
+#ifndef MODBUS_USE_UART2
 void __attribute__((interrupt, no_auto_psv)) _U2RXInterrupt(void)
 {
 #if UART_PORTS >= 2
     UARTRxInt(2);
 #endif
 }
+#endif
 
+#ifndef MODBUS_USE_UART3
 void __attribute__((interrupt, no_auto_psv)) _U3RXInterrupt(void)
 {
 #if UART_PORTS >= 3
 	UARTRxInt(3);
 #endif
 }
+#endif
 
 void __attribute__((interrupt, no_auto_psv)) _U4RXInterrupt(void)
 {

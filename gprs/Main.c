@@ -215,6 +215,7 @@ void GSMTask()
 				break;
 				
 			case SM_GSM_HW_FAULT:
+				vTaskSuspend(hFlyTask);
 				mainGSM.HWReady = FALSE;
 				HiloReset();
 				
@@ -226,6 +227,7 @@ void GSMTask()
 				mainOpStatus.ExecStat = OP_SUCCESS;
 				mainOpStatus.ErrorCode = 0;
 				mainGSM.HWReady = TRUE;
+				vTaskResume(hFlyTask);
 				break;
 				
 			case SM_GSM_HIBERNATE:
