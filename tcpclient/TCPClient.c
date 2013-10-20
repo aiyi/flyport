@@ -8,6 +8,8 @@ extern int mainGSMStateMachine;
 void TCPClient_init(TCPClient_t *this)
 {
 	this->sock.number = INVALID_SOCKET;
+	this->sock.notif = -1;
+	this->sock.rxLen = 0;
 	this->size = 0;
 	this->idx = 0;
 	this->retries = 0;
@@ -46,34 +48,12 @@ static int TCPCheckStatus(TCPClient_t *this)
 	if (TCPInvalidSocket(this))
 		return -1;
 
-	TCPStatus(&this->sock);
+	len = this->sock.rxLen;
 	
-	while(LastExecStat() == OP_EXECUTION)
-		vTaskDelay(1);
-	if(LastExecStat() != OP_SUCCESS)
-	{
-		UARTWrite(1, "Errors on updating TCPStatus!\r\n");
-		TCPHandleError(this);
-		return -1;
-	}
-	else
-	{
-		len = this->sock.rxLen;
-		if (len != 0 || this->sock.status != 3) 
-		{
-			sprintf(this->tmp, "Status:%d, ", this->sock.status);
-			UARTWrite(1, this->tmp);
-			sprintf(this->tmp, "RxLen:%d\r\n", len);
-			UARTWrite(1, this->tmp);
-			
-			if (this->sock.status == 5) {
-				TCPClient_stop(this);
-				return -1;
-			}
-		}
-	}
-
 	if (len > 0) {
+		sprintf(this->tmp, "RxLen:%d\r\n", len);
+		UARTWrite(1, this->tmp);
+
 		if (len > TCP_MAX_BUF_SIZE)
 			len = TCP_MAX_BUF_SIZE;
 		TCPRead(&this->sock, this->buff, len);
@@ -146,15 +126,13 @@ BOOL TCPClient_connect(TCPClient_t *this, char *server, uint16_t port)
 			UARTWrite(1, "\r\nTCPClientOpen OK \r\n");
 			UARTWrite(1, "Socket Number: ");
 			sprintf(this->tmp, "%d\r\n", this->sock.number);
-			UARTWrite(1, this->tmp);	
+			UARTWrite(1, this->tmp);
+			break;
 		}
 		else {
 			UARTWrite(1, "TCPClientOpen Failed!\r\n");	
 			continue;			
 		}
-
-		if (TCPCheckStatus(this) != -1)
-			break;
 	}
 	
 	return TRUE;
@@ -215,8 +193,6 @@ int TCPClient_write(TCPClient_t *this, uint8_t *buf, int len)
 	}	
 	else
 	{
-		sprintf(this->tmp, "Status:%d, ", this->sock.status);
-		UARTWrite(1, this->tmp);
 		sprintf(this->tmp, "TxLen:%d\r\n", len);
 		UARTWrite(1, this->tmp);
 	}

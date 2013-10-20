@@ -16,7 +16,7 @@ typedef unsigned short uint16_t;
 typedef struct TCPClient 
 {
 	TCP_SOCKET sock;
-	char buff[TCP_MAX_BUF_SIZE];
+	char buff[TCP_MAX_BUF_SIZE + 1];
 	char tmp[16];
 	uint16_t size;
 	uint16_t idx; 
