@@ -72,6 +72,9 @@ extern void CheckErr(int result, BYTE* smInt, DWORD* tickUpdate);
 
 static BYTE smInternal = 0; // State machine for internal use of callback functions
 static BYTE maxtimeout = 2;
+static DWORD tick;
+static char msg2send[200];
+static char cmdReply[200];
 
 static char* xApn;
 static char* xLogin;
@@ -146,10 +149,7 @@ void APNConfig(char* apn, char* login, char* passw, char* ip, char* dns1, char* 
 //****************************************************************************
 int cAPNConfig()
 {
-	char cmdReply[200];
-	char msg2send[200];
 	int resCheck = 0;
-	DWORD tick;
 	int countData;
 	int chars2read;
 	
