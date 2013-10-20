@@ -76,6 +76,9 @@ extern void gsmDebugPrint(char*);
 static BYTE smInternal = 0; // State machine for internal use of callback functions
 static BYTE maxtimeout = 2;
 
+static DWORD tick;
+static char msg2send[200];
+static char cmdReply[200];
 static char* tcpWriteBuffer;
 static int tcpWriteBufferCount;
 static char* tcpReadBuffer;
@@ -150,10 +153,7 @@ void TCPClientOpen(TCP_SOCKET* sock, char* tcpaddr, char* tcpport)
 //****************************************************************************
 int cTCPClientOpen()
 {
-	char cmdReply[200];
-	char msg2send[200];
 	int resCheck = 0;
-	DWORD tick;
 	int countData;
 	int chars2read;
 	
@@ -350,10 +350,7 @@ void TCPClientClose (TCP_SOCKET* sock)
 //****************************************************************************
 int cTCPClientClose()
 {
-	char cmdReply[200];
-	char msg2send[200];
 	int resCheck = 0;
-	DWORD tick;
 	int countData;
 	int chars2read;
 	
@@ -526,10 +523,7 @@ void TCPRead(TCP_SOCKET* sock , char* readch , int rlen)
 //****************************************************************************
 int cTCPRead()
 {
-	char cmdReply[200];
-	char msg2send[200];
 	int resCheck = 0;
-	DWORD tick;
 	int countData;
 	int chars2read;
 	
@@ -803,10 +797,7 @@ void TCPWrite(TCP_SOCKET* sock , char* writech , int wlen)
 //****************************************************************************
 int cTCPWrite()
 {
-	char cmdReply[200];
-	char msg2send[200];
 	int resCheck = 0;
-	DWORD tick;
 	int countData;
 	int chars2read;
 	
@@ -960,10 +951,7 @@ void TCPStatus(TCP_SOCKET* sock)
 //****************************************************************************
 int cTCPStatus()
 {
-	char cmdReply[200];
-	char msg2send[200];
 	int resCheck = 0;
-	DWORD tick;
 	int countData;
 	int chars2read;
 	
@@ -1140,10 +1128,7 @@ void TCPRxFlush(TCP_SOCKET* sock)
 //****************************************************************************
 int cTCPRxFlush()
 {
-	char cmdReply[200];
-	char msg2send[200];
 	int resCheck = 0;
-	DWORD tick;
 	int countData;
 	int chars2read;
 	BOOL repeatLoop = TRUE;

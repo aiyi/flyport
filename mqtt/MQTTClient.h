@@ -9,6 +9,11 @@
 #define MQTT_MAX_PACKET_SIZE 512
 #endif
 
+// MQTT_MAX_TOPIC_LEN : Maximum topic length
+#ifndef MQTT_MAX_TOPIC_LEN
+#define MQTT_MAX_TOPIC_LEN 32
+#endif
+
 // MQTT_KEEPALIVE : keepAlive interval in Seconds
 #ifndef MQTT_KEEPALIVE
 #define MQTT_KEEPALIVE 30UL

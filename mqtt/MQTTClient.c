@@ -99,11 +99,6 @@ BOOL MQTTClient_connect(MQTTClient_t *this, char *id, char *user, char *pass, ch
             }
          }
          uint16_t len = MQTTClient_readPacket(this);
-         ///////
-        char temp[16];
-		sprintf(temp, "---%02x %02x %02x %02x\r\n", buffer[0],buffer[1],buffer[2],buffer[3]);
-		UARTWrite(1, temp);	
-         /////
          if (len == 4 && buffer[3] == 0) {
             this->lastInActivity = tickGetSeconds();
             this->pingOutstanding = FALSE;
@@ -202,8 +197,10 @@ BOOL MQTTClient_loop(MQTTClient_t *this)
             if (type == MQTTPUBLISH) {
                if (this->callback) {
                   uint16_t tl = (buffer[2]<<8)+buffer[3];
-                  char topic[tl+1];
+                  char topic[MQTT_MAX_TOPIC_LEN + 1];
 				  uint16_t i;
+				  if (tl > MQTT_MAX_TOPIC_LEN)
+				     return TRUE;
                   for (i=0;i<tl;i++) {
                      topic[i] = buffer[4+i];
                   }
@@ -213,18 +210,12 @@ BOOL MQTTClient_loop(MQTTClient_t *this)
                   this->callback(topic,payload,len-4-tl);
                }
             } else if (type == MQTTPINGREQ) {
-            	///////
-				UARTWrite(1, "---MQTTPINGREQ\r\n");
-			    /////
                buffer[0] = MQTTPINGRESP;
                buffer[1] = 0;
                if (0 == TCPClient_write(this->_client,buffer,2))
 			      return FALSE;
             } else if (type == MQTTPINGRESP) {
                this->pingOutstanding = FALSE;
-			    ///////
-				UARTWrite(1, "---MQTTPINGRESP\r\n");
-			    /////
             } else {
                TCPClient_flush(this->_client);
             }
