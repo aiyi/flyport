@@ -1,0 +1,43 @@
+Interface definition between GW and Server.
+
+1）GW registration
+{gwId}/advt
+
+2）GW polling data report 
+{gwId}/feed
+
+3）Server configures GW by INI file
+{gwId}/cfg/req
+{gwId}/cfg/rsp
+
+4）Server initiates command
+{gwId}/cmd/req
+{gwId}/cmd/rsp
+
+
+INI Config file format:
+	----------------------------
+	[modbus]
+	mode=ascii        ;ascii or rtu
+	port=2            ;Serial port#
+	baud=19200        ;Baudrate
+	data=8            ;Data bits
+	parity=even       ;none, odd or even 
+	stop=1            ;Stop bits
+	sid=1,2,3         ;List of slave ID
+
+	[poll]
+	fid=1             ;Feed ID
+	func=3            ;Function code
+	reg=0             ;Start register address
+	num=2             ;Number of registers
+	freq=60           ;Polling frequency in second
+	----------------------------
+
+
+Gateway registration info should include:
+	Manufacture
+	Model            (optional)
+	Serial Number
+	Hardware Version (optional)
+	Software Version (optional)

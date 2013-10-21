@@ -215,8 +215,8 @@ void GSMTask()
 				break;
 				
 			case SM_GSM_HW_FAULT:
-				_dbgwrite("Reset HiLo module...\r\n");
 				vTaskSuspend(hFlyTask);
+				_dbgwrite("Reset HiLo module...\r\n");
 				mainGSM.HWReady = FALSE;
 				HiloReset();
 				
