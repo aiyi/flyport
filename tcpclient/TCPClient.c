@@ -12,7 +12,7 @@ void TCPClient_init(TCPClient_t *this)
 	this->sock.rxLen = 0;
 	this->size = 0;
 	this->idx = 0;
-	this->retries = 0;
+	this->tick = tickGetSeconds();
 }
 
 static inline void RequestReset()
@@ -85,9 +85,9 @@ BOOL TCPClient_connect(TCPClient_t *this, char *server, uint16_t port)
 
 	while (1) 
 	{
-		vTaskDelay(100);
-		if (this->retries++ > 10) {
-			this->retries = 0;
+		vTaskDelay(200);
+		if ((tickGetSeconds() - this->tick) > 600) {
+			this->tick = tickGetSeconds();
 			RequestReset();
 		}
 		if (ModuleOnReset()) {

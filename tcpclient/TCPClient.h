@@ -6,6 +6,7 @@
 
 typedef unsigned char uint8_t;
 typedef unsigned short uint16_t;
+typedef unsigned long uint32_t;
 
 #define tickGetSeconds TickGetDiv64K
 
@@ -20,7 +21,7 @@ typedef struct TCPClient
 	char tmp[16];
 	uint16_t size;
 	uint16_t idx; 
-	int retries;
+	uint32_t tick;
 } TCPClient_t;
 
 void TCPClient_init(TCPClient_t *);
