@@ -7,7 +7,6 @@ http://code.google.com/p/inih/
 
 */
 
-#include <stdio.h>
 #include <ctype.h>
 #include <string.h>
 
@@ -58,11 +57,55 @@ static char* strncpy0(char* dest, const char* src, size_t size)
     return dest;
 }
 
+#if !INI_USE_FILE
+static char* getline(char *line, int maxlen, char *buff, int size, int *cur)
+{
+	int count = 0;
+	int index = *cur;
+	int i;
+	char c;
+
+	if(index == -1)
+		return NULL;
+	
+	for(i = 0; i < maxlen; i++)
+	{
+		if(index == size)
+		{
+			*(line+count) = '\0';
+			*cur = -1;
+			return line;
+		}
+
+		c = *(buff+index);
+		if(c == '\n')
+		{
+			*(line+count) = '\0';
+			*cur = index + 1;
+			return line;
+		}
+		else if(c == '\r')
+			c = '\0';
+		*(line+count) = c;
+		count++;
+		index++;
+	}
+	return NULL;
+}
+#endif
+
 /* See documentation in header file. */
+#if INI_USE_FILE
 int ini_parse_file(FILE* file,
                    int (*handler)(void*, const char*, const char*,
                                   const char*),
                    void* user)
+#else
+int ini_parse(char *conf, int len, 
+                   int (*handler)(void*, const char*, const char*,
+                                  const char*),
+                   void* user)
+#endif
 {
     /* Uses a fair bit of stack (use heap instead if you need to) */
 #if INI_USE_STACK
@@ -88,7 +131,12 @@ int ini_parse_file(FILE* file,
 #endif
 
     /* Scan through file line by line */
+#if INI_USE_FILE
     while (fgets(line, INI_MAX_LINE, file) != NULL) {
+#else
+	int cur = 0;
+	while (getline(line, INI_MAX_LINE, conf, len, &cur) != NULL) {
+#endif
         lineno++;
 
         start = line;
@@ -159,6 +207,7 @@ int ini_parse_file(FILE* file,
     return error;
 }
 
+#if INI_USE_FILE
 /* See documentation in header file. */
 int ini_parse(const char* filename,
               int (*handler)(void*, const char*, const char*, const char*),
@@ -174,3 +223,4 @@ int ini_parse(const char* filename,
     fclose(file);
     return error;
 }
+#endif
