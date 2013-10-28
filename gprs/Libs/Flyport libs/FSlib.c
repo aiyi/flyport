@@ -66,14 +66,14 @@ extern int mainGSMStateMachine;
 extern OpStat	mainOpStatus;
 extern GSMModule mainGSM;
 
-extern int CheckCmd(int countData, int chars2read, const DWORD tick, char* cmdReply, const char* msg2send, const BYTE maxtimeout);
-extern int CheckEcho(int countData, const DWORD tick, char* cmdReply, const char* msg2send, const BYTE maxtimeout);
-extern void CheckErr(int result, BYTE* smInt, DWORD* tickUpdate);
 extern void callbackDbg(BYTE smInt);
 extern void gsmDebugPrint(char*);
 
 static BYTE smInternal = 0; // State machine for internal use of callback functions
 static BYTE maxtimeout = 2;
+static DWORD tick;
+extern char cmdReply[200];
+extern char msg2send[200];
 
 static char* xFSFilename;
 static BYTE* xFSBuffer;
@@ -135,10 +135,7 @@ void FSWrite(char* filename, BYTE* dataBuffer, unsigned int dataSize)
 /// @cond debug
 int cFSWrite()
 {
-	char cmdReply[200];
-	char msg2send[200];
 	int resCheck = 0;
-	DWORD tick;
 	int countData;
 	int chars2read;
 	char sizeStr[10];
@@ -296,10 +293,7 @@ void FSRead(char* filename, BYTE* dataBuffer, unsigned int dataSize)
 /// @cond debug
 int cFSRead()
 {
-	char cmdReply[200];
-	char msg2send[200];
 	int resCheck = 0;
-	DWORD tick;
 	int countData;
 	int chars2read;
 	char sizeStr[10];
@@ -460,10 +454,7 @@ void FSDelete(char* filename)
 /// @cond debug
 int cFSDelete()
 {
-	char cmdReply[200];
-	char msg2send[200];
 	int resCheck = 0;
-	DWORD tick;
 	int countData;
 	int chars2read;
 	
@@ -593,10 +584,7 @@ void FSSize(char* filename, int* dataSize)
 /// @cond debug
 int cFSSize()
 {
-	char cmdReply[200];
-	char msg2send[200];
 	int resCheck = 0;
-	DWORD tick;
 	int countData;
 	int chars2read;
 	
@@ -760,10 +748,7 @@ void FSAppend(char* filename, BYTE* dataBuffer, unsigned int dataSize)
 /// @cond debug
 int cFSAppend()
 {
-	char cmdReply[200];
-	char msg2send[200];
 	int resCheck = 0;
-	DWORD tick;
 	int countData;
 	int chars2read;
 	char sizeStr[10];

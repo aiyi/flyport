@@ -68,17 +68,15 @@ extern int mainGSMStateMachine;
 extern OpStat	mainOpStatus;
 extern GSMModule mainGSM;
 
-extern int CheckCmd(int countData, int chars2read, const DWORD tick, char* cmdReply, const char* msg2send, const BYTE maxtimeout);
-extern int CheckEcho(int countData, const DWORD tick, char* cmdReply, const char* msg2send, const BYTE maxtimeout);
-extern void CheckErr(int result, BYTE* smInt, DWORD* tickUpdate);
 extern void gsmDebugPrint(char*);
 
 static BYTE smInternal = 0; // State machine for internal use of callback functions
 static BYTE maxtimeout = 2;
 
 static DWORD tick;
-static char msg2send[200];
-static char cmdReply[200];
+extern char msg2send[200];
+extern char cmdReply[200];
+
 static char* tcpWriteBuffer;
 static int tcpWriteBufferCount;
 static char* tcpReadBuffer;
@@ -250,7 +248,7 @@ int cTCPClientOpen()
 			GSMWrite(msg2send);
 			// Start timeout count
 			tick = TickGetDiv64K(); // 1 tick every seconds
-			maxtimeout = 60;
+			maxtimeout = 120;
 			smInternal++;
 			
 		case 6:
@@ -374,7 +372,7 @@ int cTCPClientClose()
 			GSMWrite(msg2send);
 			// Start timeout count
 			tick = TickGetDiv64K(); // 1 tick every seconds
-			maxtimeout = 60;
+			maxtimeout = 120;
 			smInternal++;
 			
 		case 2:
@@ -705,12 +703,23 @@ int cTCPRead()
 				{
 					char tmp[1];
 					retCount = GSMRead(tmp, 1);
-					*(tcpReadBuffer+rxCount) = tmp[0];
-					rxCount += retCount;
-					if(retCount == 0)
+					if (retCount == 1) {
+						*(tcpReadBuffer+rxCount) = tmp[0];
+						rxCount += retCount;
+					}
+					else if ((TickGetDiv64K() - tick) < maxtimeout)
 						vTaskDelay(1);
+					else {
+						resCheck = -2;
+						xSocket->rxLen = 0;
+						break;
+					}
 				}
-				
+
+				CheckErr(resCheck, &smInternal, &tick);
+				if (resCheck)
+					return mainOpStatus.ErrorCode;
+			
 				// Set tcpReadBufferCount as the effective number of BYTEs read
 				tcpReadBufferCount = rxCount;
 				xSocket->rxLen -= rxCount;

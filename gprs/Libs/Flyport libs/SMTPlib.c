@@ -69,12 +69,11 @@ extern int mainGSMStateMachine;
 extern OpStat	mainOpStatus;
 extern GSMModule mainGSM;
 
-extern int CheckCmd(int countData, int chars2read, const DWORD tick, char* cmdReply, const char* msg2send, const BYTE maxtimeout);
-extern int CheckEcho(int countData, const DWORD tick, char* cmdReply, const char* msg2send, const BYTE maxtimeout);
-extern void CheckErr(int result, BYTE* smInt, DWORD* tickUpdate);
-
 static BYTE smInternal = 0; // State machine for internal use of callback functions
 static BYTE maxtimeout = 2;
+static DWORD tick;
+extern char msg2send[200];
+extern char cmdReply[200];
 
 static char* smtpdomain;
 static int   smtpport;
@@ -158,10 +157,7 @@ void SMTPParamsSet(char* smtpDomain, int smtpPort, char* senderEmail, char* smtp
 /// @cond debug
 int  cSMTPParamsSet()
 {
-	char cmdReply[200];
-	char msg2send[200];
-	int resCheck = 0;
-	DWORD tick;
+	int resCheck = 0; 
 	int countData;
 	int chars2read;
 	
@@ -486,10 +482,7 @@ void SMTPEmailTo(char* toDest1, char* toDest2, char* ccDest1, char* ccDest2)
 /// @cond debug
 int  cSMTPEmailTo()
 {
-	char cmdReply[350];
-	char msg2send[350];
-	int resCheck = 0;
-	DWORD tick;
+	int resCheck = 0; 
 	int countData;
 	int chars2read;
 	
@@ -627,10 +620,7 @@ void SMTPEmailSend(char* subject, char* text)
 /// @cond debug
 int  cSMTPEmailSend()
 {
-	char cmdReply[200];
-	char msg2send[200];
-	int resCheck = 0;
-	DWORD tick;
+	int resCheck = 0; 
 	int countData;
 	int chars2read;
 	
@@ -851,10 +841,7 @@ void SMTPParamsClear()
 /// @cond debug
 int  cSMTPParamsClear()
 {
-	char cmdReply[200];
-	char msg2send[200];
-	int resCheck = 0;
-	DWORD tick;
+	int resCheck = 0; 
 	int countData;
 	int chars2read;
 	

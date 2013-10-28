@@ -74,4 +74,8 @@ void GSMSleep();
 int cGSMOn(void);
 void GSMOn();
 
+int cGSMSignal(void);
+void GSMSignal();
+int GSMGetRSSI();
+
 #endif

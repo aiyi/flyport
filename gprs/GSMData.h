@@ -59,6 +59,7 @@ typedef struct
 	BYTE	ConnStatus;
 	BOOL 	PinUnlocked;
 	BOOL	HWReady;
+	int		Rssi;   // Received signal strength indicator
 }GSMModule;
 
 // ----- SMS DEFINES AND VARIABLES -----

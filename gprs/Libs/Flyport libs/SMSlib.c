@@ -71,13 +71,14 @@ extern GSMModule mainGSM;
 
 static BOOL ackSMSrequested;
 
-extern int CheckCmd(int countData, int chars2read, const DWORD tick, char* cmdReply, const char* msg2send, const BYTE maxtimeout);
-extern int CheckEcho(int countData, const DWORD tick, char* cmdReply, const char* msg2send, const BYTE maxtimeout);
-extern void CheckErr(int result, BYTE* smInt, DWORD* tickUpdate);
 extern void gsmDebugPrint(char*);
 
 static BYTE smInternal = 0; // State machine for internal use of callback functions
 static BYTE maxtimeout = 2;
+static DWORD tick;
+extern char cmdReply[200];
+extern char msg2send[200];
+
 /// @endcond
 
 /**
@@ -164,10 +165,7 @@ int LastSmsRepValue()
 /// @cond debug
 int cSMSSend()
 {
-	char cmdReply[200];
-	char msg2send[200];
 	int resCheck = 0;
-	DWORD tick;
 	int countData;
 	int chars2read;
 	char ctrlz[2];
@@ -440,9 +438,6 @@ void SMSSend(char* phoneNumber, char* text, BOOL ack)
 int cSMSRead()
 {
 	int resCheck = 0;
-	char cmdReply[200];
-	char msg2send[200];
-	DWORD tick;
 	int countData = 0;
 	int chars2read = 1;
 	// Prepare memory string parameter
@@ -869,9 +864,6 @@ void SMSRead(int indexMsg, BYTE memType)
 int cSMSDelete()
 {
 	int resCheck = 0;
-	char cmdReply[200];
-	char msg2send[200];
-	DWORD tick;
 	int countData = 0;
 	int chars2read = 1;
 	

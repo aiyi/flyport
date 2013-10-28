@@ -69,12 +69,11 @@ extern int mainGSMStateMachine;
 extern OpStat	mainOpStatus;
 extern GSMModule mainGSM;
 
-extern int CheckCmd(int countData, int chars2read, const DWORD tick, char* cmdReply, const char* msg2send, const BYTE maxtimeout);
-extern int CheckEcho(int countData, const DWORD tick, char* cmdReply, const char* msg2send, const BYTE maxtimeout);
-extern void CheckErr(int result, BYTE* smInt, DWORD* tickUpdate);
-
 static BYTE smInternal = 0; // State machine for internal use of callback functions
 static BYTE maxtimeout = 2;
+static DWORD tick;
+extern char cmdReply[200];
+extern char msg2send[200];
 
 static WORD xFTPPort;
 extern FTP_SOCKET* xFTPSocket;
@@ -145,10 +144,7 @@ void FTPConfig(FTP_SOCKET* ftpSocket, char* serverName, char* login, char* passw
 /// @cond debug
 int cFTPConfig()
 {
-	char cmdReply[200];
-	char msg2send[200];
 	int resCheck = 0;
-	DWORD tick;
 	int countData;
 	int chars2read;
 	
@@ -322,10 +318,7 @@ void FTPReceive(FTP_SOCKET* ftpSocket, char* flashFilename, char* serverPath, ch
 /// @cond debug
 int cFTPReceive()
 {
-	char cmdReply[200];
-	char msg2send[200];
 	int resCheck = 0;
-	DWORD tick;
 	int countData;
 	int chars2read;
 	
@@ -544,10 +537,7 @@ void FTPSend(FTP_SOCKET* ftpSocket, char* flashFilename, char* serverPath, char*
 /// @cond debug
 int cFTPSend()
 {
-	char cmdReply[200];
-	char msg2send[200];
 	int resCheck = 0;
-	DWORD tick;
 	int countData;
 	int chars2read;
 	
@@ -767,10 +757,7 @@ void FTPDelete(FTP_SOCKET* ftpSocket, char* serverPath, char* serverFilename)
 /// @cond debug
 int cFTPDelete()
 {
-	char cmdReply[200];
-	char msg2send[200];
 	int resCheck = 0;
-	DWORD tick;
 	int countData;
 	int chars2read;
 	

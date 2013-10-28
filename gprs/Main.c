@@ -70,7 +70,7 @@ const long int baudComp[8] = {	1200,	2400,	4800,	9600,
 							 };	// Warning those values are the baud config compatible with both
 								// HiloV2 and Hilo3G models... 
 
-static int (*FP_GSM[35])();
+static int (*FP_GSM[36])();
 
 void CmdCheck(int mainStat)
 {
@@ -167,7 +167,7 @@ void GSMTask()
 	FP_GSM[32] = cFSDelete;
 	FP_GSM[33] = cFSSize;
 	FP_GSM[34] = cFSAppend;
-	
+	FP_GSM[35] = cGSMSignal;
 	
 	// Initialization of tick only at the startup of the device
 	if (hFlyTask == NULL)

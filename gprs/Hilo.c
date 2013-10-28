@@ -111,7 +111,7 @@ extern FTP_SOCKET* xFTPSocket;
 
 int EventType=0;
 int HiloComTest();
-int CheckEcho(int countData, const DWORD tick, char* cmdReply, const char* msg2send, const BYTE maxtimeout);
+int CheckEcho(int countData, const DWORD tick, char* reply, const char* msg, const BYTE maxtimeout);
 
 /**
  * Returns last GSM network connection status
@@ -827,7 +827,7 @@ BOOL GSMpSeek(int start, int num, char* towrite)
 		limit = num;
 		int bufind_r_temp = bufind_r + start;
 		
-		if(bufind_r_temp > GSM_BUFFER_SIZE)
+		if(bufind_r_temp >= GSM_BUFFER_SIZE)
 			bufind_r_temp = bufind_r_temp - GSM_BUFFER_SIZE;
 			
 		int irx = 0;
@@ -1957,28 +1957,28 @@ int getAnswer(const char* answer2src, int lineNumber, char* replyBuffer)
 
 
 /**
- * CheckCmd - 	Check if GSM received echo message (written inside msg2send). 
+ * CheckCmd - 	Check if GSM received echo message (written inside msg). 
  				This functions searches the '\r' char inside GSMBuffer using GSMpSeek, and after uses getAnswer
  			 -  If yes set TRUE dataFound, if timeout occurs set TRUE timeout
  * \param countData - the starting position related to circular GSMBuffer (it uses GSMpSeek)
  * \param chars2read - the amount of lines to be read using getAnswer
  * \param tick - the starting tick value when the command was written to UART
- * \param cmdReply - char* to be used as buffer
- * \param msg2send - char* with echo to search
+ * \param reply - char* to be used as buffer
+ * \param msg - char* with echo to search
  * \param maxtimeout - max timeout seconds to track
  * \return result of operation
  */
-int CheckCmd(int countData, int chars2read, const DWORD tick, char* cmdReply, const char* msg2send, const BYTE maxtimeout)
+int CheckCmd(int countData, int chars2read, const DWORD tick, char* reply, const char* msg, const BYTE maxtimeout)
 {
 	// Check timeout	
 	while((TickGetDiv64K() - tick) < maxtimeout)
 	{
 		// Seek GSMBuffer to search '\r' character...
-		if(GSMpSeek(countData, 1, cmdReply) == TRUE)
+		if(GSMpSeek(countData, 1, reply) == TRUE)
 		{			
-			if(cmdReply[0] == '\r')
+			if(reply[0] == '\r')
 			{
-				return getAnswer(msg2send, chars2read, cmdReply);
+				return getAnswer(msg, chars2read, reply);
 			}	
 			else
 				countData++;
@@ -1995,27 +1995,27 @@ int CheckCmd(int countData, int chars2read, const DWORD tick, char* cmdReply, co
 }
 
 /**
- * CheckEcho - 	Check if GSM received echo message (written inside msg2send). 
+ * CheckEcho - 	Check if GSM received echo message (written inside msg). 
  				This functions searches the '\r' char inside buffer using GSMpSeek, and after uses echoFind
  			 -  If yes set TRUE dataFound, if timeout occurs set TRUE timeout
  * \param countData - the starting position related to circular GSMBuffer (it uses GSMpSeek)
  * \param tick - the starting tick value when the command was written to UART
- * \param cmdReply - char* to be used as buffer
- * \param msg2send - char* with echo to search
+ * \param reply - char* to be used as buffer
+ * \param msg - char* with echo to search
  * \param maxtimeout - max timeout seconds to track
  * \return result of operation
  */
-int CheckEcho(int countData, const DWORD tick, char* cmdReply, const char* msg2send, const BYTE maxtimeout)
+int CheckEcho(int countData, const DWORD tick, char* reply, const char* msg, const BYTE maxtimeout)
 {
 	// Check timeout	
 	while((TickGetDiv64K() - tick) < maxtimeout)
 	{
 		// Seek GSMBuffer to search '\r' character...
-		if(GSMpSeek(countData, 1, cmdReply) == TRUE)
+		if(GSMpSeek(countData, 1, reply) == TRUE)
 		{
-			if(cmdReply[0] == '\r')
+			if(reply[0] == '\r')
 			{
-				return echoFind(msg2send);
+				return echoFind(msg);
 			}	
 			else
 				countData++;

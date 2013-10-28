@@ -110,4 +110,8 @@ int echoFind(const char* echoStr);
 int getAnswer(const char* answer2src, int lineNumber, char* replyBuffer);
 int getfield(char start, char stop, int maxlen, int parnum, char* srcbuff, char* destbuff, int timeout);
 
+int CheckCmd(int countData, int chars2read, const DWORD tick, char* reply, const char* msg, const BYTE maxtimeout);
+int CheckEcho(int countData, const DWORD tick, char* reply, const char* msg, const BYTE maxtimeout);
+void CheckErr(int result, BYTE* smInt, DWORD* tickUpdate);
+
 #endif

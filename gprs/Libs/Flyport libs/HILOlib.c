@@ -66,13 +66,13 @@ extern int mainGSMStateMachine;
 extern OpStat	mainOpStatus;
 extern GSMModule mainGSM;
 
-extern int CheckCmd(int countData, int chars2read, const DWORD tick, char* cmdReply, const char* msg2send, const BYTE maxtimeout);
-extern int CheckEcho(int countData, const DWORD tick, char* cmdReply, const char* msg2send, const BYTE maxtimeout);
-extern void CheckErr(int result, BYTE* smInt, DWORD* tickUpdate);
 extern void gsmDebugPrint(char*);
 
 static BYTE smInternal = 0; // State machine for internal use of callback functions
 static BYTE maxtimeout = 2;
+static DWORD tick;
+char msg2send[200];
+char cmdReply[200];
 
 //static BOOL connVal = FALSE;
 /// @endcond
@@ -137,10 +137,7 @@ void GSMHibernate()
 int cGSMHibernate()
 {
 	// AT*PSCPOF -> response: OK
-	char cmdReply[200];
-	char msg2send[200];
 	int resCheck = 0;
-	DWORD tick;
 	int countData = 0;
 	int chars2read = 1;
 	
@@ -330,6 +327,157 @@ int cGSMOn()
 	return -1;
 }
 /// @endcond
+
+/**
+ * Get the GSM signal quality.
+ * \param None
+ * \return None
+ */
+void GSMSignal()
+{
+	BOOL opok = FALSE;
+	
+	if(mainGSM.HWReady != TRUE)
+		return;
+	
+	//	Function cycles until it is not executed
+	while (!opok)
+	{
+		while (xSemaphoreTake(xSemFrontEnd,0) != pdTRUE);		//	xSemFrontEnd TAKE
+
+		// Check mainOpStatus.ExecStat
+		if (mainOpStatus.ExecStat != OP_EXECUTION)
+		{		
+			mainOpStatus.ExecStat = OP_EXECUTION;
+			mainOpStatus.Function = 35;
+			mainOpStatus.ErrorCode = 0;
+			
+			xQueueSendToBack(xQueue,&mainOpStatus.Function,0);	//	Send COMMAND request to the stack
+			
+			xSemaphoreGive(xSemFrontEnd);						//	xSemFrontEnd GIVE, the stack can answer to the command
+			opok = TRUE;
+		}
+		else
+		{
+			xSemaphoreGive(xSemFrontEnd);
+			taskYIELD();
+		}
+	}
+}
+
+/// @cond debug
+//****************************************************************************
+//	Only internal use:
+//	cGSMSignal callback function
+//****************************************************************************
+int cGSMSignal()
+{
+	int resCheck = 0;
+	int countData;
+	int chars2read;
+	
+	switch(smInternal)
+	{
+		case 0:
+			// Check if Buffer is free
+			if(GSMBufferSize() > 0)
+			{
+				// Parse Unsol Message
+				mainGSMStateMachine = SM_GSM_CMD_PENDING;
+				return -1;
+			}
+			else
+				smInternal++;
+		case 1:	
+			// Send AT command
+			sprintf(msg2send, "AT+CSQ\r");
+			GSMWrite(msg2send);
+			// Start timeout count
+			tick = TickGetDiv64K(); // 1 tick every seconds
+			maxtimeout = 60;
+			smInternal++;
+			mainGSM.Rssi = -1;
+		case 2:
+			vTaskDelay(20);
+			// Check ECHO 
+			countData = 0;
+			
+			resCheck = CheckEcho(countData, tick, cmdReply, msg2send, maxtimeout);
+						
+			CheckErr(resCheck, &smInternal, &tick);
+			
+			if(resCheck)
+			{
+				return mainOpStatus.ErrorCode;
+			}
+			
+		case 3:
+			// Get reply "\r\n+CSQ: <rssi>,<ber>\r\n"
+			vTaskDelay(20);
+			sprintf(msg2send, "+CSQ");
+			chars2read = 2;
+			countData = 2; // GSM buffer should be: <CR><LF>+CSQ: <rssi>,<ber><CR><LF>
+			
+			resCheck = CheckCmd(countData, chars2read, tick, cmdReply, msg2send, maxtimeout);
+			
+			CheckErr(resCheck, &smInternal, &tick);
+			
+			if(resCheck)
+			{
+				return mainOpStatus.ErrorCode;
+			}
+			else
+			{
+				// Get rssi
+				char temp[8];
+				int res = getfield(':', ',', 5, 1, cmdReply, temp, 500);
+				if(res != 1)
+				{
+					// Execute Error Handler
+					gsmDebugPrint( "Error in getfield for +CSQ\r\n");
+					break;
+				}
+				else
+				{
+					mainGSM.Rssi = atoi(temp);
+				}
+			}	
+			
+		case 4:
+			// Get reply (\r\nOK\r\n)
+			vTaskDelay(1);
+			// Get OK
+			sprintf(msg2send, "OK");
+			chars2read = 2;
+			countData = 2; // GSM buffer should be: <CR><LF>OK<CR><LF>
+			resCheck = CheckCmd(countData, chars2read, tick, cmdReply, msg2send, maxtimeout);
+			
+			CheckErr(resCheck, &smInternal, &tick);
+			
+			if(resCheck)
+			{
+				return mainOpStatus.ErrorCode;
+			}
+			
+		default:
+			break;
+	
+	}
+
+	smInternal = 0;
+	// Cmd = 0 only if the last command successfully executed
+	mainOpStatus.ExecStat = OP_SUCCESS;
+	mainOpStatus.Function = 0;
+	mainOpStatus.ErrorCode = 0;
+	mainGSMStateMachine = SM_GSM_IDLE;
+	return -1;
+}
+/// @endcond
+
+int GSMGetRSSI()
+{
+	return mainGSM.Rssi;
+}
 
 /*! @} */
 
