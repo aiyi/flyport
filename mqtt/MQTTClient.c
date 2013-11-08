@@ -196,18 +196,26 @@ BOOL MQTTClient_loop(MQTTClient_t *this)
             uint8_t type = buffer[0]&0xF0;
             if (type == MQTTPUBLISH) {
                if (this->callback) {
-                  uint16_t tl = (buffer[2]<<8)+buffer[3];
+                  uint16_t tl, offset;
+                  if (len < 128) {
+                     tl = (buffer[2]<<8)+buffer[3];
+                     offset = 4;
+                  }
+				  else {
+                     tl = (buffer[3]<<8)+buffer[4];
+                     offset = 5;
+				  }
                   char topic[MQTT_MAX_TOPIC_LEN + 1];
 				  uint16_t i;
 				  if (tl > MQTT_MAX_TOPIC_LEN)
 				     return TRUE;
                   for (i=0;i<tl;i++) {
-                     topic[i] = buffer[4+i];
+                     topic[i] = buffer[offset+i];
                   }
                   topic[tl] = 0;
                   // ignore msgID - only support QoS 0 subs
-                  uint8_t *payload = buffer+4+tl;
-                  this->callback(topic,payload,len-4-tl);
+                  uint8_t *payload = buffer+offset+tl;
+                  this->callback(topic,payload,len-offset-tl);
                }
             } else if (type == MQTTPINGREQ) {
                buffer[0] = MQTTPINGRESP;

@@ -64,6 +64,8 @@
 static UCHAR    ucMBAddress;
 static eMBMode  eMBCurrentMode;
 
+volatile UCHAR ucMBBuf[EXTRA_HEAD_ROOM + MB_SER_PDU_SIZE_MAX];
+
 static enum
 {
     STATE_ENABLED,
@@ -414,3 +416,96 @@ eMBPoll( void )
     return MB_ENOERR;
 }
 #endif
+
+eMBErrorCode eMBMReadHoldingRegisters(UCHAR ucSlaveAddress, USHORT usRegStartAddress, 
+                        UCHAR ubNRegs, UCHAR **pucRcvFrame, USHORT *pusLength) 
+{
+    eMBErrorCode eStatus;
+    eMBEventType eEvent;
+    UCHAR ucRcvAddress;
+	UCHAR *ucMBFrame = ( UCHAR *) &ucMBBuf[EXTRA_HEAD_ROOM + 1];
+
+    /* make up request frame */     
+    ucMBFrame[0] = MB_FUNC_READ_HOLDING_REGISTER;
+    ucMBFrame[1] = (UCHAR)(usRegStartAddress >> 8);
+    ucMBFrame[2] = (UCHAR)(usRegStartAddress);
+    ucMBFrame[3] = (UCHAR)(ubNRegs >> 8);
+    ucMBFrame[4] = (UCHAR)(ubNRegs);        
+    
+    /* send request frame to slave device */
+    if (eMBCurrentMode == MB_ASCII)
+        eStatus = eMBASCIISend( ucSlaveAddress, ucMBFrame, 5 );
+    else
+        eStatus = eMBRTUSend( ucSlaveAddress, ucMBFrame, 5 );
+
+    if (eStatus != MB_ENOERR)
+        return eStatus;
+	
+    /* wait on receive event */
+    if( xMBPortEventGet( &eEvent ) == TRUE )
+    {               
+        if (eMBCurrentMode == MB_ASCII)
+            eStatus = eMBASCIIReceive( &ucRcvAddress, pucRcvFrame, pusLength );
+        else
+			eStatus = eMBRTUReceive( &ucRcvAddress, pucRcvFrame, pusLength );
+		
+        if( eStatus != MB_ENOERR )
+		    return eStatus;
+
+        /* Check if the frame is for us. If not ignore the frame. */
+        if (ucRcvAddress == ucSlaveAddress)
+        {
+			*pucRcvFrame -= 1; // back to slave address
+			*pusLength += 1;
+			
+            if ((*pucRcvFrame)[1] == MB_FUNC_READ_HOLDING_REGISTER 
+					&& (*pucRcvFrame)[2] == 2*ubNRegs)
+				return MB_ENOERR;
+			else
+            	return MB_ENOREG;
+        }	
+    }
+
+    return MB_ETIMEDOUT;
+}
+
+eMBErrorCode eMBMSendData(UCHAR *data, USHORT len, UCHAR **pucRcvFrame, USHORT *pusLength) 
+{
+    eMBErrorCode eStatus;
+    eMBEventType eEvent;
+    UCHAR ucRcvAddress;
+	UCHAR ucSlaveAddress = *data;
+	UCHAR *ucMBFrame = data + 1;
+    
+    /* send request frame to slave device */
+    if (eMBCurrentMode == MB_ASCII)
+        eStatus = eMBASCIISend( ucSlaveAddress, ucMBFrame, len - 1 );
+    else
+        eStatus = eMBRTUSend( ucSlaveAddress, ucMBFrame, len - 1 );
+
+    if (eStatus != MB_ENOERR)
+        return eStatus;
+	
+    /* wait on receive event */
+    if( xMBPortEventGet( &eEvent ) == TRUE )
+    {               
+        if (eMBCurrentMode == MB_ASCII)
+            eStatus = eMBASCIIReceive( &ucRcvAddress, pucRcvFrame, pusLength );
+        else
+			eStatus = eMBRTUReceive( &ucRcvAddress, pucRcvFrame, pusLength );
+		
+        if( eStatus != MB_ENOERR )
+		    return eStatus;
+
+        /* Check if the frame is for us. If not ignore the frame. */
+        if (ucRcvAddress == ucSlaveAddress)
+        {
+			*pucRcvFrame -= 1; // back to slave address
+			*pusLength += 1;
+			return MB_ENOERR;
+        }	
+    }
+
+    return MB_ETIMEDOUT;
+}
+

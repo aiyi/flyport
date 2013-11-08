@@ -33,7 +33,7 @@
 #endif
 
 /* ----------------------- Variables ----------------------------------------*/
-static xQueueHandle xQueueHdl;
+static xQueueHandle xQueueHdl = NULL;
 
 
 /* ----------------------- Start implementation -----------------------------*/
@@ -41,7 +41,7 @@ BOOL
 xMBPortEventInit( void )
 {
     BOOL            bStatus = FALSE;
-    if( 0 != ( xQueueHdl = xQueueCreate( 1, sizeof( eMBEventType ) ) ) )
+    if( xQueueHdl || 0 != ( xQueueHdl = xQueueCreate( 1, sizeof( eMBEventType ) ) ) )
     {
         bStatus = TRUE;
     }

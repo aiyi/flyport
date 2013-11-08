@@ -612,16 +612,22 @@ int HiloStdModeOn(long int baud)
 	}
 	
 	// AT+KGSN=0 (to get IMEI)
-	sprintf(UnsolBuffer, "AT+KGSN=1\r");
+	sprintf(UnsolBuffer, "AT+KGSN=0\r");
 	GSMWrite(UnsolBuffer);
 	if(!findStr("+KGSN: ", 300))
 	{
 		GSMRead((char*)mainGSM.IMEI, 15);
-		mainGSM.IMEI[16] = '\0';
+		mainGSM.IMEI[14] = '\0';
+		_dbgwrite("AT+KGSN=0 OK\r\n");
+		_dbgwrite("IMEI:");
+		_dbgwrite(mainGSM.IMEI);
+		_dbgwrite("\r\n");
 	}
 	if(findStr("OK\r\n", 300))
 	{
 		sprintf((char*)mainGSM.IMEI, "ERROR!");
+		_dbgwrite("AT+KGSN=0 ERROR\r\n");
+		return OP_SYNTAX_ERR;
 	}
 	
 	mainGSM.HWReady = TRUE;

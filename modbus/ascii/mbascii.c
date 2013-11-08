@@ -50,7 +50,6 @@
 #define MB_ASCII_DEFAULT_CR     '\r'    /*!< Default CR character for Modbus ASCII. */
 #define MB_ASCII_DEFAULT_LF     '\n'    /*!< Default LF character for Modbus ASCII. */
 #define MB_SER_PDU_SIZE_MIN     3       /*!< Minimum size of a Modbus ASCII frame. */
-#define MB_SER_PDU_SIZE_MAX     256     /*!< Maximum size of a Modbus ASCII frame. */
 #define MB_SER_PDU_SIZE_LRC     1       /*!< Size of LRC field in PDU. */
 #define MB_SER_PDU_ADDR_OFF     0       /*!< Offset of slave address in Ser-PDU. */
 #define MB_SER_PDU_PDU_OFF      1       /*!< Offset of Modbus-PDU in Ser-PDU. */
@@ -89,10 +88,8 @@ static UCHAR    prvucMBLRC( UCHAR * pucFrame, USHORT usLen );
 static volatile eMBSndState eSndState;
 static volatile eMBRcvState eRcvState;
 
-/* We reuse the Modbus RTU buffer because only one buffer is needed and the
- * RTU buffer is bigger. */
-extern volatile UCHAR ucRTUBuf[];
-static volatile UCHAR *ucASCIIBuf = ucRTUBuf;
+extern volatile UCHAR ucMBBuf[EXTRA_HEAD_ROOM + MB_SER_PDU_SIZE_MAX];
+static volatile UCHAR *ucASCIIBuf = ucMBBuf + EXTRA_HEAD_ROOM;
 
 static volatile USHORT usRcvBufferPos;
 static volatile eMBBytePos eBytePos;
@@ -297,6 +294,9 @@ xMBASCIIReceiveFSM( void )
             /* Notify the caller of eMBASCIIReceive that a new frame
              * was received. */
             xNeedPoll = xMBPortEventPost( EV_FRAME_RECEIVED );
+            #ifdef MB_MASTER
+            vMBPortSerialEnable( FALSE, FALSE );
+			#endif
         }
         else if( ucByte == ':' )
         {

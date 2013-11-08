@@ -411,6 +411,11 @@ eMBErrorCode    eMBRegCoilsCB( UCHAR * pucRegBuffer, USHORT usAddress,
 eMBErrorCode    eMBRegDiscreteCB( UCHAR * pucRegBuffer, USHORT usAddress,
                                   USHORT usNDiscrete );
 
+// Master functions
+eMBErrorCode eMBMReadHoldingRegisters(UCHAR ucSlaveAddress, USHORT usRegStartAddress, 
+                        UCHAR ubNRegs, UCHAR **pucRcvFrame, USHORT *pusLength);
+eMBErrorCode eMBMSendData(UCHAR *data, USHORT len, UCHAR **pucRcvFrame, USHORT *pusLength);
+
 #ifdef __cplusplus
 PR_END_EXTERN_C
 #endif

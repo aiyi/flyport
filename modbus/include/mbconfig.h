@@ -59,6 +59,14 @@ PR_BEGIN_EXTERN_C
 /*! \brief If Modbus TCP support is enabled. */
 #define MB_TCP_ENABLED                          (  0 )
 
+#ifndef MB_SER_PDU_SIZE_MAX
+#define MB_SER_PDU_SIZE_MAX     256     /*!< Maximum size of a Modbus RTU/ASCII frame. */
+#endif
+
+#ifndef EXTRA_HEAD_ROOM
+#define EXTRA_HEAD_ROOM     0     /* For integration with other protocol to relay modbus message */
+#endif
+
 /*! \brief The character timeout value for Modbus ASCII.
  *
  * The character timeout value is not fixed for Modbus ASCII and is therefore

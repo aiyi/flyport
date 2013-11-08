@@ -6,11 +6,17 @@
 
 #define MB_MASTER
 
-#define MB_ASCII_ENABLED           (  1 )
+#define MB_ASCII_ENABLED           1
 
-#define MB_RTU_ENABLED             (  1 )
+#define MB_RTU_ENABLED             1
 
-#define MB_EVENT_GET_TIMEOUT_MS    ( 100 )
+#define MB_EVENT_GET_TIMEOUT_MS    1000
+
+#define MB_SER_PDU_SIZE_MAX    256
+
+#define EXTRA_HEAD_ROOM        8
+
+#define MQTT_MAX_PACKET_SIZE   1000
 
 #endif
 

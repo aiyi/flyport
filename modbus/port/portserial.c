@@ -94,6 +94,7 @@ xMBPortSerialInit( UCHAR ucPORT, ULONG ulBaudRate, UCHAR ucDataBits, eMBParity e
 	}
 
 	// Initialize the RS485
+	RS485Off(ucPORT);
 	RS485Init(ucPORT, ulBaudRate);
 	RS485SetParam(ucPORT, RS485_STOP_BITS, stopBits);
 	RS485SetParam(ucPORT, RS485_DATA_PARITY, dataParity);
