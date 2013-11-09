@@ -31,12 +31,13 @@ static eMBErrorCode poll_slave(UCHAR slaveid, poll_cfg_t *task)
 	UCHAR *ucRcvFrame;
 	USHORT usLength;
 
-	UARTWrite(1, "Modbus Polling...\r\n");
+	UARTWrite(1, "Modbus polling...\r\n");
 	eStatus = eMBMReadHoldingRegisters(slaveid, task->regStart, task->nRegs, &ucRcvFrame, &usLength);
 	
 	if(eStatus == MB_ENOERR || eStatus == MB_ENOREG) {
 		UCHAR *data = ucRcvFrame - 2;
 		*((unsigned short *)data) = Swap2Bytes(task->feedId);
+		UARTWrite(1, "Replied\r\n");
 		send_msg(MSG_FEED, data, 2 + usLength);
 	}
 	else {
@@ -72,7 +73,7 @@ void TaskModbus()
 	msg_hdr_t *pMsg = (msg_hdr_t *)(ucMBBuf + EXTRA_HEAD_ROOM - sizeof(msg_hdr_t));
 
 	while (1) {
-		if (xQueueReceive(xQueueModbus, (void *)pMsg, 0)) {
+		if (xQueueReceive(xQueueModbus, (void *)pMsg, 0) && init) {
 			eMBErrorCode eStatus;
 			UCHAR *ucRcvFrame;
 			USHORT usLength;
@@ -80,7 +81,7 @@ void TaskModbus()
 			UCHAR ucSlave = *data;
 			UCHAR ucfunc = *(data + 1);
 			
-			UARTWrite(1, "Modbus Request...\r\n");
+			UARTWrite(1, "Modbus request...\r\n");
 			eStatus = eMBMSendData(data, pMsg->data_len - 2, &ucRcvFrame, &usLength);
 			
 			data = ucRcvFrame - 2;
@@ -99,7 +100,9 @@ void TaskModbus()
 				sprintf(strStatus, "eStatus=%d\r\n", eStatus);
 				UARTWrite(1, strStatus);
 			}
-			
+			else {
+				UARTWrite(1, "Replied\r\n");
+			}
 			send_msg(MSG_CMD_RSP, data, 2 + usLength);
 		}
 

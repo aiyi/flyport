@@ -149,7 +149,7 @@ typedef enum
  *    - eMBErrorCode::MB_EPORTERR IF the porting layer returned an error.
  */
 eMBErrorCode    eMBInit( eMBMode eMode, UCHAR ucSlaveAddress,
-                         UCHAR ucPort, ULONG ulBaudRate, eMBParity eParity );
+                         UCHAR ucPort, ULONG ulBaudRate, UCHAR ucData, eMBParity eParity, UCHAR ucStop);
 
 /*! \ingroup modbus
  * \brief Initialize the Modbus protocol stack for Modbus TCP.
@@ -412,6 +412,7 @@ eMBErrorCode    eMBRegDiscreteCB( UCHAR * pucRegBuffer, USHORT usAddress,
                                   USHORT usNDiscrete );
 
 // Master functions
+void eMBStopTxRx(void);
 eMBErrorCode eMBMReadHoldingRegisters(UCHAR ucSlaveAddress, USHORT usRegStartAddress, 
                         UCHAR ubNRegs, UCHAR **pucRcvFrame, USHORT *pusLength);
 eMBErrorCode eMBMSendData(UCHAR *data, USHORT len, UCHAR **pucRcvFrame, USHORT *pusLength);

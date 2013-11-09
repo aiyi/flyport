@@ -102,7 +102,7 @@ static volatile UCHAR ucMBLFCharacter;
 
 /* ----------------------- Start implementation -----------------------------*/
 eMBErrorCode
-eMBASCIIInit( UCHAR ucSlaveAddress, UCHAR ucPort, ULONG ulBaudRate, eMBParity eParity )
+eMBASCIIInit( UCHAR ucSlaveAddress, UCHAR ucPort, ULONG ulBaudRate, UCHAR ucData, eMBParity eParity, UCHAR ucStop )
 {
     eMBErrorCode    eStatus = MB_ENOERR;
     ( void )ucSlaveAddress;
@@ -110,7 +110,7 @@ eMBASCIIInit( UCHAR ucSlaveAddress, UCHAR ucPort, ULONG ulBaudRate, eMBParity eP
     ENTER_CRITICAL_SECTION(  );
     ucMBLFCharacter = MB_ASCII_DEFAULT_LF;
 
-    if( xMBPortSerialInit( ucPort, ulBaudRate, 7, eParity ) != TRUE )
+    if( xMBPortSerialInit( ucPort, ulBaudRate, ucData, eParity, ucStop ) != TRUE )
     {
         eStatus = MB_EPORTERR;
     }
@@ -216,6 +216,11 @@ eMBASCIISend( UCHAR ucSlaveAddress, const UCHAR * pucFrame, USHORT usLength )
         eStatus = MB_EIO;
     }
     EXIT_CRITICAL_SECTION(  );
+
+	vTaskSuspendAll();
+	while (!pxMBFrameCBTransmitterEmpty());
+	xTaskResumeAll();
+
     return eStatus;
 }
 

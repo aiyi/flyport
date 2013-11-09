@@ -62,6 +62,8 @@
 
 #include "Hilo.h"
 #include "p24FJ256GA106.h"
+#include "RS232Helper.h"
+
 #if defined (FLYPORTGPRS)
 
 extern int *UMODEs[];
@@ -634,6 +636,9 @@ int HiloStdModeOn(long int baud)
 	return 0;
 }
 
+char rxChar[51];
+int rxIdx = 0;
+
 // UART4 Rx Interrupt to store received chars from modem
 void GSMRxInt()
 {
@@ -653,6 +658,13 @@ void GSMRxInt()
 		}
 
 		GSMBuffer[bufind_w] = *URXREGs[port];
+		
+		rxChar[rxIdx] = GSMBuffer[bufind_w];
+		if (rxIdx == 49)
+			rxIdx = 0;
+		else
+			rxIdx++;
+		
 		if (bufind_w == GSM_BUFFER_SIZE - 1)
 		{
 			bufind_w = 0;
@@ -667,6 +679,8 @@ void GSMRxInt()
 // Writes to GSM Modem the cahrs contained on data2wr until a '\0' is reached
 void GSMWrite(char* data2wr)
 {
+	RS232Write(3, data2wr);
+
 	int port = HILO_UART-1;
 	int pdsel;
 	int cnt = 0;	
@@ -701,6 +715,8 @@ void GSMWrite(char* data2wr)
 
 void GSMWriteCh(char chr)
 {
+	RS232WriteCh(3, chr);
+
 	int port = HILO_UART-1;
 	int pdsel;
 	pdsel = (*UMODEs[port] & 6) >>1;
@@ -766,6 +782,8 @@ int GSMRead(char *towrite , int count)
 	while (irx < count)
 	{
         *(towrite+irx) = GSMBuffer[bufind_r];
+
+		RS232WriteCh(3, GSMBuffer[bufind_r]);
 
 		if (bufind_r == (GSM_BUFFER_SIZE-1))
 			bufind_r = 0;

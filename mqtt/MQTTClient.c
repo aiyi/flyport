@@ -104,6 +104,9 @@ BOOL MQTTClient_connect(MQTTClient_t *this, char *id, char *user, char *pass, ch
             this->pingOutstanding = FALSE;
             return TRUE;
          }
+		 else {
+		 	TCPClient_stop(client);
+		 }
       }
    }
    return FALSE;

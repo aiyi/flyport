@@ -35,7 +35,7 @@
 PR_BEGIN_EXTERN_C
 #endif
     eMBErrorCode eMBRTUInit( UCHAR slaveAddress, UCHAR ucPort, ULONG ulBaudRate,
-                             eMBParity eParity );
+                             UCHAR ucData, eMBParity eParity, UCHAR ucStop );
 void            eMBRTUStart( void );
 void            eMBRTUStop( void );
 eMBErrorCode    eMBRTUReceive( UCHAR * pucRcvAddress, UCHAR ** pucFrame, USHORT * pusLength );

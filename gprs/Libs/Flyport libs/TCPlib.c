@@ -836,7 +836,7 @@ int cTCPWrite()
 			GSMWrite(msg2send);
 			// Start timeout count
 			tick = TickGetDiv64K(); // 1 tick every seconds
-			maxtimeout = 120;
+			maxtimeout = 60;
 			smInternal++;
 			
 		case 2:

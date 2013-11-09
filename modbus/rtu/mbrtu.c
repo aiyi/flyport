@@ -78,7 +78,7 @@ static volatile USHORT usRcvBufferPos;
 
 /* ----------------------- Start implementation -----------------------------*/
 eMBErrorCode
-eMBRTUInit( UCHAR ucSlaveAddress, UCHAR ucPort, ULONG ulBaudRate, eMBParity eParity )
+eMBRTUInit( UCHAR ucSlaveAddress, UCHAR ucPort, ULONG ulBaudRate, UCHAR ucData, eMBParity eParity, UCHAR ucStop )
 {
     eMBErrorCode    eStatus = MB_ENOERR;
     ULONG           usTimerT35_50us;
@@ -87,7 +87,7 @@ eMBRTUInit( UCHAR ucSlaveAddress, UCHAR ucPort, ULONG ulBaudRate, eMBParity ePar
     ENTER_CRITICAL_SECTION(  );
 
     /* Modbus RTU uses 8 Databits. */
-    if( xMBPortSerialInit( ucPort, ulBaudRate, 8, eParity ) != TRUE )
+    if( xMBPortSerialInit( ucPort, ulBaudRate, ucData, eParity, ucStop) != TRUE )
     {
         eStatus = MB_EPORTERR;
     }
@@ -224,6 +224,11 @@ eMBRTUSend( UCHAR ucSlaveAddress, const UCHAR * pucFrame, USHORT usLength )
         eStatus = MB_EIO;
     }
     EXIT_CRITICAL_SECTION(  );
+
+	vTaskSuspendAll();
+	while (!pxMBFrameCBTransmitterEmpty());
+	xTaskResumeAll();
+
     return eStatus;
 }
 

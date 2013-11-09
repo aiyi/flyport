@@ -71,5 +71,11 @@ xMBPortEventGet( eMBEventType * eEvent )
     {
         xEventHappened = TRUE;
     }
+#ifdef MB_MASTER	
+	else
+	{
+		eMBStopTxRx();
+	}
+#endif
     return xEventHappened;
 }

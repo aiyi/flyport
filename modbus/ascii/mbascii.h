@@ -37,7 +37,7 @@ PR_BEGIN_EXTERN_C
 
 #if MB_ASCII_ENABLED > 0
 eMBErrorCode    eMBASCIIInit( UCHAR slaveAddress, UCHAR ucPort,
-                              ULONG ulBaudRate, eMBParity eParity );
+                              ULONG ulBaudRate, UCHAR ucData, eMBParity eParity, UCHAR ucStop );
 void            eMBASCIIStart( void );
 void            eMBASCIIStop( void );
 

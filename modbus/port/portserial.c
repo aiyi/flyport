@@ -21,6 +21,7 @@
 
 #include "port.h"
 #include "RS485Helper.h"
+#include "RS232Helper.h"
 
 /* ----------------------- Modbus includes ----------------------------------*/
 #include "mb.h"
@@ -53,44 +54,49 @@ vMBPortSerialEnable( BOOL xRxEnable, BOOL xTxEnable )
 	
 	if(xTxEnable){
 		RS485TxEnable(2);
-		EnableIntU2TX;
-		IFS1bits.U2TXIF = 1;
+		//EnableIntU2TX;
+		//IFS1bits.U2TXIF = 1;
 	}
 	else {
 		while(BusyUART2());
 		RS485TxDisable(2);
-		DisableIntU2TX;
+		//DisableIntU2TX;
 	}
 }
 
 BOOL
-xMBPortSerialInit( UCHAR ucPORT, ULONG ulBaudRate, UCHAR ucDataBits, eMBParity eParity )
+xMBPortSerialInit( UCHAR ucPORT, ULONG ulBaudRate, UCHAR ucDataBits, eMBParity eParity, UCHAR ucStopBits )
 {
 	int dataParity;
 	int stopBits;
 
-	switch (eParity)
-	{
+	if (ucDataBits != 8) {
+		return FALSE;
+	}
+
+	switch (eParity) {
 	case MB_PAR_NONE:
 		dataParity = UART_8BITS_PARITY_NONE;
-		stopBits = UART_TWO_STOP;
 		break;
 	case MB_PAR_ODD:
 		dataParity = UART_8BITS_PARITY_ODD;
-		stopBits = UART_ONE_STOP;
 		break;
 	case MB_PAR_EVEN:
 		dataParity = UART_8BITS_PARITY_EVEN;
-		stopBits = UART_ONE_STOP;
 		break;
 	default:
 		return FALSE;
 	}
-
-	if (ucDataBits == 7)
-	{
-		dataParity = UART_8BITS_PARITY_NONE;
+	
+	switch (ucStopBits) {
+	case 1:
 		stopBits = UART_ONE_STOP;
+		break;
+	case 2:
+		stopBits = UART_TWO_STOP;
+		break;
+	default:
+		return FALSE;
 	}
 
 	// Initialize the RS485
@@ -110,6 +116,8 @@ xMBPortSerialPutByte( CHAR ucByte )
      * called. */
 	while(BusyUART2());
 	WriteUART2((unsigned int)ucByte);
+
+    RS232WriteCh(3, ucByte);
     return TRUE;
 }
 
@@ -121,6 +129,8 @@ xMBPortSerialGetByte( CHAR * pucByte )
      */
 	while(!DataRdyUART2());
 	*pucByte = (CHAR)ReadUART2();
+
+    RS232WriteCh(3, *pucByte);
     return TRUE;
 }
 
@@ -130,12 +140,13 @@ xMBPortSerialGetByte( CHAR * pucByte )
  * a new character can be sent. The protocol stack will then call 
  * xMBPortSerialPutByte( ) to send the character.
  */
+ #if 0
 void __attribute__((interrupt, no_auto_psv)) _U2TXInterrupt(void)
 {
 	U2TX_Clear_Intr_Status_Bit;
     pxMBFrameCBTransmitterEmpty(  );
 }
-
+#endif
 /* Create an interrupt handler for the receive interrupt for your target
  * processor. This function should then call pxMBFrameCBByteReceived( ). The
  * protocol stack will then call xMBPortSerialGetByte( ) to retrieve the
@@ -143,6 +154,6 @@ void __attribute__((interrupt, no_auto_psv)) _U2TXInterrupt(void)
  */
 void __attribute__((interrupt, no_auto_psv)) _U2RXInterrupt(void)
 {
-	U2RX_Clear_Intr_Status_Bit;
     pxMBFrameCBByteReceived(  );
+	U2RX_Clear_Intr_Status_Bit;
 }

@@ -154,7 +154,7 @@ static void do_config(char *cfg, unsigned int len)
 		return;
 	}
 
-	if (eMBInit(config.mode, 0x0A, config.port, config.baudrate, config.parity)) {
+	if (eMBInit(config.mode, 0x0A, config.port, config.baudrate, config.dataBits, config.parity, config.stopBits)) {
 		UARTWrite(1, "Failed to init Modbus.\n");
 		return;
 	}
@@ -211,6 +211,7 @@ void FlyportTask()
 {
 	init = 0;
 	int connected = 0;
+	unsigned long rssi_lastime = 0;
 	unsigned long ad_lastime = 0;
 	char ad_info[80];
 	msg_hdr_t *msg = (msg_hdr_t *)(mqtt.buffer + 50);
@@ -239,17 +240,17 @@ void FlyportTask()
 	vTaskDelay(20);
     UARTWrite(1,"Flyport registered on network!\r\n");
 
-	sprintf(ad_info, "[gw]\nmft=GeeLink\nmdl=GPRS\nsn=%s\nhw=1.0\nsw=1.0\ntid=%hu", 
-		GSMGetIMEI(), LFSRRand());
+	sprintf(ad_info, "[gw]\nmft=GeeLink\nmdl=GPRS\nsn=%s\nhw=1.0\nsw=1.0", GSMGetIMEI());
 
 	TCPClient_init(&client);
 	MQTTClient_init(&mqtt, MQTT_SERVER, MQTT_PORT, mqtt_callback, &client);
 
 	while (1) {
 		if (!connected) {
-			vTaskDelay(500);
+			init = 0;
+			vTaskDelay(1000);
 			char *devid = GSMGetIMEI();
-			
+	
 			// clientID, username, MD5 encoded password
 			if (!MQTTClient_connect(&mqtt, devid, MQTT_USER, MQTT_PASS, NULL, 0, 0, NULL)) {
 				UARTWrite(1,"Failed connect to mqtt server!\r\n");
@@ -272,16 +273,7 @@ void FlyportTask()
 		}
 		else if (!init) {
 			if (tickGetSeconds() > (ad_lastime + 30)) {
-				#if 0
-				GSMSignal();
-				while(LastExecStat() == OP_EXECUTION)
-					vTaskDelay(1);
-				char rssi[12];
-				sprintf(rssi, "RSSI:%d\r\n", GSMGetRSSI());
-				UARTWrite(1, rssi);
-				#endif
 				IOPut(p21, toggle);
-			
 				mqtt_send_msg(MQTT_TOPIC_ADVT, (uint8_t*)ad_info, strlen(ad_info));
 				ad_lastime = tickGetSeconds();
 			}
@@ -297,6 +289,16 @@ void FlyportTask()
 		if (!MQTTClient_loop(&mqtt)) {
 			MQTTClient_disconnect(&mqtt);
 			connected = 0;
+		}
+
+		if (connected && tickGetSeconds() > (rssi_lastime + 5)) {
+			GSMSignal();
+			while(LastExecStat() == OP_EXECUTION)
+				vTaskDelay(1);
+			char rssi[12];
+			sprintf(rssi, "RSSI:%d\r\n", GSMGetRSSI());
+			UARTWrite(1, rssi);	
+			rssi_lastime = tickGetSeconds();
 		}
 	}
 }

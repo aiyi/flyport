@@ -131,7 +131,7 @@ static xMBFunctionHandler xFuncHandlers[MB_FUNC_HANDLERS_MAX] = {
 
 /* ----------------------- Start implementation -----------------------------*/
 eMBErrorCode
-eMBInit( eMBMode eMode, UCHAR ucSlaveAddress, UCHAR ucPort, ULONG ulBaudRate, eMBParity eParity )
+eMBInit( eMBMode eMode, UCHAR ucSlaveAddress, UCHAR ucPort, ULONG ulBaudRate, UCHAR ucData, eMBParity eParity, UCHAR ucStop)
 {
     eMBErrorCode    eStatus = MB_ENOERR;
 
@@ -158,7 +158,7 @@ eMBInit( eMBMode eMode, UCHAR ucSlaveAddress, UCHAR ucPort, ULONG ulBaudRate, eM
             pxMBFrameCBTransmitterEmpty = xMBRTUTransmitFSM;
             pxMBPortCBTimerExpired = xMBRTUTimerT35Expired;
 
-            eStatus = eMBRTUInit( ucMBAddress, ucPort, ulBaudRate, eParity );
+            eStatus = eMBRTUInit( ucMBAddress, ucPort, ulBaudRate, ucData, eParity, ucStop );
             break;
 #endif
 #if MB_ASCII_ENABLED > 0
@@ -172,7 +172,7 @@ eMBInit( eMBMode eMode, UCHAR ucSlaveAddress, UCHAR ucPort, ULONG ulBaudRate, eM
             pxMBFrameCBTransmitterEmpty = xMBASCIITransmitFSM;
             pxMBPortCBTimerExpired = xMBASCIITimerT1SExpired;
 
-            eStatus = eMBASCIIInit( ucMBAddress, ucPort, ulBaudRate, eParity );
+            eStatus = eMBASCIIInit( ucMBAddress, ucPort, ulBaudRate, ucData, eParity, ucStop );
             break;
 #endif
         default:
@@ -415,7 +415,13 @@ eMBPoll( void )
     }
     return MB_ENOERR;
 }
-#endif
+
+#else
+
+void eMBStopTxRx( void )
+{
+	pvMBFrameStartCur();
+}
 
 eMBErrorCode eMBMReadHoldingRegisters(UCHAR ucSlaveAddress, USHORT usRegStartAddress, 
                         UCHAR ubNRegs, UCHAR **pucRcvFrame, USHORT *pusLength) 
@@ -508,4 +514,4 @@ eMBErrorCode eMBMSendData(UCHAR *data, USHORT len, UCHAR **pucRcvFrame, USHORT *
 
     return MB_ETIMEDOUT;
 }
-
+#endif

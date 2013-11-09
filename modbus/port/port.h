@@ -25,6 +25,7 @@
 #include <assert.h>
 #include <uart.h>
 #include "FreeRTOS.h"
+#include "task.h"
 #include "opt.h"
 
 #define	INLINE                      inline
