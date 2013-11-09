@@ -291,7 +291,7 @@ void FlyportTask()
 			connected = 0;
 		}
 
-		if (connected && tickGetSeconds() > (rssi_lastime + 5)) {
+		if (connected && tickGetSeconds() > (rssi_lastime + 30)) {
 			GSMSignal();
 			while(LastExecStat() == OP_EXECUTION)
 				vTaskDelay(1);
