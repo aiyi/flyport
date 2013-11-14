@@ -202,8 +202,7 @@ void GSMTask()
 	
 	if (hFlyTask == NULL)
 	{
-		_dbgwrite("Flyport GPRS/3G starting...\r\n");
-		_dbgwrite("setting up HiLo module...\r\n");
+		_dbgwrite("Setting up GPRS module...\r\n");
 				
 		// Enter Standard Mode:
 		while(HiloStdModeOn(baudComp[7])); // 115200 baud...
@@ -241,9 +240,9 @@ void GSMTask()
 				
 			case SM_GSM_HW_FAULT:
 				vTaskSuspend(hFlyTask);
-				_dbgwrite("Reset HiLo module...\r\n");
+				_dbgwrite("Reset GPRS module...\r\n");
 
-				RS232Write(3, "\r\n-----------SM_GSM_HW_FAULT------------\r\n");
+				RS232Write(3, "\r\n-----------Reset GPRS module------------\r\n");
 				rxChar[50] = '\0';
 				RS232Write(3, rxChar);
 				sprintf(rxChar, "\r\nrxIdx = %d\r\n", rxIdx);

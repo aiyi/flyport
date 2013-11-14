@@ -221,7 +221,7 @@ void FlyportTask()
 	RS485Remap(port485, TX_485, RX_485, DE_485, RE_485);
 	
 	vTaskDelay(20);
-    UARTWrite(1,"Flyport Task Started...\r\n");
+    UARTWrite(1,"MQTT Task Started...\r\n");
 
 	if (hModbusTask == NULL) {
 		xQueueModbus = xQueueCreate(1, EXTRA_HEAD_ROOM + MB_SER_PDU_SIZE_MAX);
@@ -238,7 +238,7 @@ void FlyportTask()
     }
     IOPut(p21, on);
 	vTaskDelay(20);
-    UARTWrite(1,"Flyport registered on network!\r\n");
+    UARTWrite(1,"Registered on network!\r\n");
 
 	sprintf(ad_info, "[gw]\nmft=GeeLink\nmdl=GPRS\nsn=%s\nhw=1.0\nsw=1.0", GSMGetIMEI());
 

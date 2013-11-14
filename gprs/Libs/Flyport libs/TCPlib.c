@@ -196,7 +196,7 @@ int cTCPClientOpen()
 		case 3:
 			// Get reply "+KTCPCFG: <socket>"
 			vTaskDelay(1);
-			sprintf(msg2send, "+KTCPCFG");
+			sprintf(msg2send, "\r\n+KTCPCFG");
 			chars2read = 2;
 			countData = 2; // GSM buffer should be: <CR><LF>+KTCPCFG: <socket><CR><LF>
 			
@@ -229,7 +229,7 @@ int cTCPClientOpen()
 			// Get reply (\r\nOK\r\n)
 			vTaskDelay(1);
 			// Get OK
-			sprintf(msg2send, "OK");
+			sprintf(msg2send, "\r\nOK");
 			chars2read = 2;
 			countData = 2; // GSM buffer should be: <CR><LF>OK<CR><LF>
 			resCheck = CheckCmd(countData, chars2read, tick, cmdReply, msg2send, maxtimeout);
@@ -393,7 +393,7 @@ int cTCPClientClose()
 			// Get reply (\r\nOK\r\n)
 			vTaskDelay(1);
 			// Get OK
-			sprintf(msg2send, "OK");
+			sprintf(msg2send, "\r\nOK");
 			chars2read = 2;
 			countData = 2; // GSM buffer should be: <CR><LF>OK<CR><LF>
 			resCheck = CheckCmd(countData, chars2read, tick, cmdReply, msg2send, maxtimeout);
@@ -434,7 +434,7 @@ int cTCPClientClose()
 			// Get reply (\r\nOK\r\n)
 			vTaskDelay(1);
 			// Get OK
-			sprintf(msg2send, "OK");
+			sprintf(msg2send, "\r\nOK");
 			chars2read = 2;
 			countData = 2; // GSM buffer should be: <CR><LF>OK<CR><LF>
 			resCheck = CheckCmd(countData, chars2read, tick, cmdReply, msg2send, maxtimeout);
@@ -572,7 +572,7 @@ int cTCPRead()
 		case 3:
 			// Get reply "\r\n+KTCPSTAT: <status>,<tcp_notif>,<rem_data>,<rcv_data>\r\n"
 			vTaskDelay(20);
-			sprintf(msg2send, "+KTCPSTAT");
+			sprintf(msg2send, "\r\n+KTCPSTAT");
 			chars2read = 2;
 			countData = 2; // GSM buffer should be: <CR><LF>+KTCPSTAT: <status>,<tcp_notif>,<rem_data>,<rcv_data><CR><LF>
 			
@@ -631,7 +631,7 @@ int cTCPRead()
 			// Get reply (\r\nOK\r\n)
 			vTaskDelay(1);
 			// Get OK
-			sprintf(msg2send, "OK");
+			sprintf(msg2send, "\r\nOK");
 			chars2read = 2;
 			countData = 2; // GSM buffer should be: <CR><LF>OK<CR><LF>
 			resCheck = CheckCmd(countData, chars2read, tick, cmdReply, msg2send, maxtimeout);
@@ -682,7 +682,7 @@ int cTCPRead()
 		case 7:
 			// Get reply "\r\nCONNECT\r\n"
 			vTaskDelay(1);
-			sprintf(msg2send, "CONNECT");
+			sprintf(msg2send, "\r\nCONNECT");
 			chars2read = 2;
 			countData = 2; // GSM buffer should be: <CR><LF>CONNECT<CR><LF>
 			
@@ -858,7 +858,7 @@ int cTCPWrite()
 			vTaskDelay(20);
 			sprintf(msg2send, "\r\nCONNECT");
 			chars2read = 2;
-			countData = 4; // GSM buffer should be: <CR><LF>CONNECT<CR><LF>
+			countData = 2; // GSM buffer should be: <CR><LF>CONNECT<CR><LF>
 			
 			resCheck = CheckCmd(countData, chars2read, tick, cmdReply, msg2send, maxtimeout);
 			
@@ -886,7 +886,7 @@ int cTCPWrite()
 			// Get reply (\r\nOK\r\n)
 			vTaskDelay(20);
 			// Get OK
-			sprintf(msg2send, "OK");
+			sprintf(msg2send, "\r\nOK");
 			chars2read = 2;
 			countData = 2; // GSM buffer should be: <CR><LF>OK<CR><LF>
 			resCheck = CheckCmd(countData, chars2read, tick, cmdReply, msg2send, maxtimeout);
@@ -1004,7 +1004,7 @@ int cTCPStatus()
 		case 3:
 			// Get reply "\r\n+KTCPSTAT: <status>,<tcp_notif>,<rem_data>,<rcv_data>\r\n"
 			vTaskDelay(20);
-			sprintf(msg2send, "+KTCPSTAT");
+			sprintf(msg2send, "\r\n+KTCPSTAT");
 			chars2read = 2;
 			countData = 2; // GSM buffer should be: <CR><LF>+KTCPSTAT: <status>,<tcp_notif>,<rem_data>,<rcv_data><CR><LF>
 			
@@ -1063,7 +1063,7 @@ int cTCPStatus()
 			// Get reply (\r\nOK\r\n)
 			vTaskDelay(1);
 			// Get OK
-			sprintf(msg2send, "OK");
+			sprintf(msg2send, "\r\nOK");
 			chars2read = 2;
 			countData = 2; // GSM buffer should be: <CR><LF>OK<CR><LF>
 			resCheck = CheckCmd(countData, chars2read, tick, cmdReply, msg2send, maxtimeout);
@@ -1185,7 +1185,7 @@ int cTCPRxFlush()
 			case 3:
 				// Get reply "\r\n+KTCPSTAT: <status>,<tcp_notif>,<rem_data>,<rcv_data>\r\n"
 				vTaskDelay(20);
-				sprintf(msg2send, "+KTCPSTAT");
+				sprintf(msg2send, "\r\n+KTCPSTAT");
 				chars2read = 2;
 				countData = 2; // GSM buffer should be: <CR><LF>+KTCPSTAT: <status>,<tcp_notif>,<rem_data>,<rcv_data><CR><LF>
 				
@@ -1244,7 +1244,7 @@ int cTCPRxFlush()
 				// Get reply (\r\nOK\r\n)
 				vTaskDelay(1);
 				// Get OK
-				sprintf(msg2send, "OK");
+				sprintf(msg2send, "\r\nOK");
 				chars2read = 2;
 				countData = 2; // GSM buffer should be: <CR><LF>OK<CR><LF>
 				resCheck = CheckCmd(countData, chars2read, tick, cmdReply, msg2send, maxtimeout);
@@ -1295,7 +1295,7 @@ int cTCPRxFlush()
 			case 7:
 				// Get reply "\r\nCONNECT\r\n"
 				vTaskDelay(2);
-				sprintf(msg2send, "CONNECT");
+				sprintf(msg2send, "\r\nCONNECT");
 				chars2read = 2;
 				countData = 2; // GSM buffer should be: <CR><LF>CONNECT<CR><LF>
 				
@@ -1326,12 +1326,12 @@ int cTCPRxFlush()
 				}
 			
 			case 8:
-				// Get reply (\r\n--EOF--Pattern--\r\nOK\r\n)
+				// Get reply (--EOF--Pattern--\r\nOK\r\n)
 				vTaskDelay(1);
 				// Get OK
 				sprintf(msg2send, "--EOF--Pattern--\r\nOK");
 				chars2read = 2;
-				countData = 2; // GSM buffer should be: <CR><LF>--EOF--Pattern--<CR><LF>OK<CR><LF>
+				countData = 0; // GSM buffer should be: --EOF--Pattern--<CR><LF>OK<CR><LF>
 				resCheck = CheckCmd(countData, chars2read, tick, cmdReply, msg2send, maxtimeout);
 				
 				CheckErr(resCheck, &smInternal, &tick);
