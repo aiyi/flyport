@@ -10,7 +10,7 @@
 
 #define MB_RTU_ENABLED             1
 
-#define MB_EVENT_GET_TIMEOUT_MS    1000
+#define MB_EVENT_GET_TIMEOUT_MS    2000
 
 #define MB_SER_PDU_SIZE_MAX    256
 

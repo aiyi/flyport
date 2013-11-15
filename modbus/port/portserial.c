@@ -47,20 +47,12 @@ vMBPortSerialEnable( BOOL xRxEnable, BOOL xTxEnable )
      */
 	if(xRxEnable){
 		EnableIntU2RX;
-	}
-	else {
-		DisableIntU2RX;
-	}
-	
-	if(xTxEnable){
-		RS485TxEnable(2);
-		//EnableIntU2TX;
-		//IFS1bits.U2TXIF = 1;
-	}
-	else {
 		while(BusyUART2());
 		RS485TxDisable(2);
-		//DisableIntU2TX;
+	}
+	else {
+		RS485TxEnable(2);
+		DisableIntU2RX;
 	}
 }
 
@@ -154,6 +146,6 @@ void __attribute__((interrupt, no_auto_psv)) _U2TXInterrupt(void)
  */
 void __attribute__((interrupt, no_auto_psv)) _U2RXInterrupt(void)
 {
-    pxMBFrameCBByteReceived(  );
 	U2RX_Clear_Intr_Status_Bit;
+    pxMBFrameCBByteReceived(  );
 }

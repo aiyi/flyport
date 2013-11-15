@@ -132,6 +132,7 @@ eMBASCIIStart( void )
     vMBPortSerialEnable( TRUE, FALSE );
 #else
 	vMBPortSerialEnable( FALSE, FALSE );
+	vMBPortTimersDisable(  );
 #endif
     eRcvState = STATE_RX_IDLE;
     EXIT_CRITICAL_SECTION(  );
@@ -396,12 +397,12 @@ xMBASCIITransmitFSM( void )
         /* Notify the task which called eMBASCIISend that the frame has
          * been sent. */
     case STATE_TX_NOTIFY:
-        eSndState = STATE_TX_IDLE;
-        xNeedPoll = xMBPortEventPost( EV_FRAME_SENT );
+        //eSndState = STATE_TX_IDLE;
+        //xNeedPoll = xMBPortEventPost( EV_FRAME_SENT );
 
         /* Disable transmitter. This prevents another transmit buffer
          * empty interrupt. */
-        vMBPortSerialEnable( TRUE, FALSE );
+        //vMBPortSerialEnable( TRUE, FALSE );
         eSndState = STATE_TX_IDLE;
         break;
 
@@ -410,6 +411,7 @@ xMBASCIITransmitFSM( void )
     case STATE_TX_IDLE:
         /* enable receiver/disable transmitter. */
         vMBPortSerialEnable( TRUE, FALSE );
+		xNeedPoll = TRUE;
         break;
     }
 

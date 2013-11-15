@@ -138,6 +138,7 @@ eMBRTUStart( void )
 #else
 	eRcvState = STATE_RX_IDLE;
     vMBPortSerialEnable( FALSE, FALSE );
+	vMBPortTimersDisable(  );
 #endif
 
     EXIT_CRITICAL_SECTION(  );
@@ -306,6 +307,7 @@ xMBRTUTransmitFSM( void )
     case STATE_TX_IDLE:
         /* enable receiver/disable transmitter. */
         vMBPortSerialEnable( TRUE, FALSE );
+        xNeedPoll = TRUE;
         break;
 
     case STATE_TX_XMIT:
@@ -318,10 +320,10 @@ xMBRTUTransmitFSM( void )
         }
         else
         {
-            xNeedPoll = xMBPortEventPost( EV_FRAME_SENT );
+            //xNeedPoll = xMBPortEventPost( EV_FRAME_SENT );
             /* Disable transmitter. This prevents another transmit buffer
              * empty interrupt. */
-            vMBPortSerialEnable( TRUE, FALSE );
+            //vMBPortSerialEnable( TRUE, FALSE );
             eSndState = STATE_TX_IDLE;
         }
         break;
