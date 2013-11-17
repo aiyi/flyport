@@ -33,26 +33,23 @@
 #define		UART_ONE_STOP 		0
 #define		UART_TWO_STOP		1
 
-#define		UART_8BITS_PARITY_EVEN 4
-#define		UART_8BITS_PARITY_ODD  2
-#define		UART_8BITS_PARITY_NONE	0
 #define		UART_9BITS_PARITY_NONE	6
+#define		UART_8BITS_PARITY_ODD   4
+#define		UART_8BITS_PARITY_EVEN  2
+#define		UART_8BITS_PARITY_NONE	0
 
 /* ----------------------- Start implementation -----------------------------*/
 void
 vMBPortSerialEnable( BOOL xRxEnable, BOOL xTxEnable )
 {
-    /* If xRXEnable enable serial receive interrupts. If xTxENable enable
-     * transmitter empty interrupts.
-     */
 	if(xRxEnable){
-		EnableIntU2RX;
+		//EnableIntU2RX;
 		while(BusyUART2());
 		RS485TxDisable(2);
 	}
 	else {
 		RS485TxEnable(2);
-		DisableIntU2RX;
+		//DisableIntU2RX;
 	}
 }
 
