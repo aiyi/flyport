@@ -1,0 +1,42 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.5.4	//
+!_TAG_REVISION_NAME	MCHPTags	//
+!_TAG_REVISION_VERSION	6.0.1	//
+Continue	D:\OpenPicus - Flyport v2.2\Bootloader 1.2 test\Brutus GA106 v1.2.1\src\ds30loader_mod.s	846;"	l	line:846
+EraseLastTwoPages	D:\OpenPicus - Flyport v2.2\Bootloader 1.2 test\Brutus GA106 v1.2.1\src\ds30loader_mod.s	912;"	l	line:912
+GotoLowOk	D:\OpenPicus - Flyport v2.2\Bootloader 1.2 test\Brutus GA106 v1.2.1\src\ds30loader_mod.s	795;"	l	line:795
+GotoOk	D:\OpenPicus - Flyport v2.2\Bootloader 1.2 test\Brutus GA106 v1.2.1\src\ds30loader_mod.s	806;"	l	line:806
+LoadUserApplication	D:\OpenPicus - Flyport v2.2\Bootloader 1.2 test\Brutus GA106 v1.2.1\src\ds30loader_mod.s	624;"	l	line:624
+Main	D:\OpenPicus - Flyport v2.2\Bootloader 1.2 test\Brutus GA106 v1.2.1\src\ds30loader_mod.s	309;"	l	line:309
+NextLatch	D:\OpenPicus - Flyport v2.2\Bootloader 1.2 test\Brutus GA106 v1.2.1\src\ds30loader_mod.s	741;"	l	line:741
+NextPage	D:\OpenPicus - Flyport v2.2\Bootloader 1.2 test\Brutus GA106 v1.2.1\src\ds30loader_mod.s	708;"	l	line:708
+NextRow	D:\OpenPicus - Flyport v2.2\Bootloader 1.2 test\Brutus GA106 v1.2.1\src\ds30loader_mod.s	731;"	l	line:731
+NotUsrappHi	D:\OpenPicus - Flyport v2.2\Bootloader 1.2 test\Brutus GA106 v1.2.1\src\ds30loader_mod.s	833;"	l	line:833
+NotUsrappLow	D:\OpenPicus - Flyport v2.2\Bootloader 1.2 test\Brutus GA106 v1.2.1\src\ds30loader_mod.s	822;"	l	line:822
+Send	D:\OpenPicus - Flyport v2.2\Bootloader 1.2 test\Brutus GA106 v1.2.1\src\ds30loader_mod.s	532;"	l	line:532
+SkipUpgradeFromExtMem	D:\OpenPicus - Flyport v2.2\Bootloader 1.2 test\Brutus GA106 v1.2.1\src\ds30loader_mod.s	595;"	l	line:595
+SpiOk	D:\OpenPicus - Flyport v2.2\Bootloader 1.2 test\Brutus GA106 v1.2.1\src\ds30loader_mod.s	887;"	l	line:887
+UpgradeFromExtMem	D:\OpenPicus - Flyport v2.2\Bootloader 1.2 test\Brutus GA106 v1.2.1\src\ds30loader_mod.s	671;"	l	line:671
+Write	D:\OpenPicus - Flyport v2.2\Bootloader 1.2 test\Brutus GA106 v1.2.1\src\ds30loader_mod.s	515;"	l	line:515
+blprot	D:\OpenPicus - Flyport v2.2\Bootloader 1.2 test\Brutus GA106 v1.2.1\src\ds30loader_mod.s	427;"	l	line:427
+blprotok	D:\OpenPicus - Flyport v2.2\Bootloader 1.2 test\Brutus GA106 v1.2.1\src\ds30loader_mod.s	447;"	l	line:447
+buffer	D:\OpenPicus - Flyport v2.2\Bootloader 1.2 test\Brutus GA106 v1.2.1\src\ds30loader_mod.s	958;"	l	line:958
+chksum	D:\OpenPicus - Flyport v2.2\Bootloader 1.2 test\Brutus GA106 v1.2.1\src\ds30loader_mod.s	390;"	l	line:390
+compl	D:\OpenPicus - Flyport v2.2\Bootloader 1.2 test\Brutus GA106 v1.2.1\src\ds30loader_mod.s	524;"	l	line:524
+eraseact	D:\OpenPicus - Flyport v2.2\Bootloader 1.2 test\Brutus GA106 v1.2.1\src\ds30loader_mod.s	419;"	l	line:419
+exit	D:\OpenPicus - Flyport v2.2\Bootloader 1.2 test\Brutus GA106 v1.2.1\src\ds30loader_mod.s	577;"	l	line:577
+latlo	D:\OpenPicus - Flyport v2.2\Bootloader 1.2 test\Brutus GA106 v1.2.1\src\ds30loader_mod.s	469;"	l	line:469
+main1	D:\OpenPicus - Flyport v2.2\Bootloader 1.2 test\Brutus GA106 v1.2.1\src\ds30loader_mod.s	312;"	l	line:312
+notrcv	D:\OpenPicus - Flyport v2.2\Bootloader 1.2 test\Brutus GA106 v1.2.1\src\ds30loader_mod.s	566;"	l	line:566
+rcvdata	D:\OpenPicus - Flyport v2.2\Bootloader 1.2 test\Brutus GA106 v1.2.1\src\ds30loader_mod.s	350;"	l	line:350
+rpt1	D:\OpenPicus - Flyport v2.2\Bootloader 1.2 test\Brutus GA106 v1.2.1\src\ds30loader_mod.s	558;"	l	line:558
+rptc	D:\OpenPicus - Flyport v2.2\Bootloader 1.2 test\Brutus GA106 v1.2.1\src\ds30loader_mod.s	559;"	l	line:559
+txwait	D:\OpenPicus - Flyport v2.2\Bootloader 1.2 test\Brutus GA106 v1.2.1\src\ds30loader_mod.s	542;"	l	line:542
+usrapp	D:\OpenPicus - Flyport v2.2\Bootloader 1.2 test\Brutus GA106 v1.2.1\src\ds30loader_mod.s	171;"	l	line:171
+verrow	D:\OpenPicus - Flyport v2.2\Bootloader 1.2 test\Brutus GA106 v1.2.1\src\ds30loader_mod.s	485;"	l	line:485
+vfail	D:\OpenPicus - Flyport v2.2\Bootloader 1.2 test\Brutus GA106 v1.2.1\src\ds30loader_mod.s	508;"	l	line:508
+wrrow_	D:\OpenPicus - Flyport v2.2\Bootloader 1.2 test\Brutus GA106 v1.2.1\src\ds30loader_mod.s	409;"	l	line:409
