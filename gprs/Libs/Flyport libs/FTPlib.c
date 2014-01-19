@@ -60,6 +60,7 @@
 #include "Hilo.h"
 #include "GSMData.h"
 #include "FTPlib.h"
+#include "SPIFlash.h"
 
 extern void callbackDbg(BYTE smInt);
 extern void gsmDebugPrint(char*);
@@ -83,7 +84,10 @@ static char* xFTPPassw;
 static char* xFTPServFilename;
 static char* xFTPServPath;
 static char* xFTPFlashFilename;
+static long xFTPServFileSize;
+static unsigned long xFTPFlashLoc;
 static BOOL xFTPAppeMode = FALSE;
+
 /// @endcond
 
 /**
@@ -164,21 +168,11 @@ int cFTPConfig()
 		case 1:	
 			// Send first AT command
 			// ----------	FTP Connection Configuration	----------
-			//sprintf(msg2send, "AT+KFTPCFG=0,\"%s\",\"%s\",\"%s\",%d,1\r", xFTPServName, xFTPLogin, xFTPPassw, xFTPPort);
-			sprintf(msg2send, "AT+KFTPCFG=0,\"");
-			char portnum[6];
-			sprintf(portnum, "%d\r", xFTPPort);
+			sprintf(msg2send, "AT+KFTPCFG=0,\"%s\",\"%s\",\"%s\",%d,1\r", xFTPServName, xFTPLogin, xFTPPassw, xFTPPort);
 			GSMWrite(msg2send);
-			GSMWrite(xFTPServName);
-			GSMWrite("\",\"");
-			GSMWrite(xFTPLogin);
-			GSMWrite("\",\"");
-			GSMWrite(xFTPPassw);
-			GSMWrite("\",");
-			GSMWrite(portnum);
 			// Start timeout count
 			tick = TickGetDiv64K(); // 1 tick every seconds
-			maxtimeout = 2;
+			maxtimeout = 8;
 			smInternal++;
 			
 		case 2:
@@ -194,23 +188,13 @@ int cFTPConfig()
 			{
 				return mainOpStatus.ErrorCode;
 			}
-			else
-			{
-				int dummyLen = strlen(xFTPServName) + strlen(xFTPLogin) + strlen(xFTPPassw) + strlen(portnum) + 10;
-				while(dummyLen > 0)
-				{
-					GSMRead(cmdReply, 1);
-					dummyLen--;
-				}
-				cmdReply[0] = '\0';
-			}
 			
 		case 3:
 			// Get reply "+KFTPCFG: <socket>"
 			vTaskDelay(2);
-			sprintf(msg2send, "+KFTPCFG");
+			sprintf(msg2send, "\r\n+KFTPCFG");
 			chars2read = 2;
-			countData = 0; // GSM buffer should be: <CR><LF>+KFTPCFG: <socket><CR><LF>
+			countData = 2; // GSM buffer should be: <CR><LF>+KFTPCFG: <socket><CR><LF>
 			
 			resCheck = CheckCmd(countData, chars2read, tick, cmdReply, msg2send, maxtimeout);
 			
@@ -241,7 +225,7 @@ int cFTPConfig()
 			// Get reply (\r\nOK\r\n)
 			vTaskDelay(1);
 			// Get OK
-			sprintf(msg2send, "OK\r\n");
+			sprintf(msg2send, "\r\nOK");
 			chars2read = 2;
 			countData = 2; // GSM buffer should be: <CR><LF>OK<CR><LF>
 			resCheck = CheckCmd(countData, chars2read, tick, cmdReply, msg2send, maxtimeout);
@@ -276,7 +260,7 @@ int cFTPConfig()
  * \param char* to server file name string
  * \return None
  */
-void FTPReceive(FTP_SOCKET* ftpSocket, char* flashFilename, char* serverPath, char* serverFilename)
+void FTPReceive(FTP_SOCKET* ftpSocket, unsigned long flashLoc, char* serverPath, char* serverFilename, long fileSize)
 {
 	BOOL opok = FALSE;
 	
@@ -297,10 +281,10 @@ void FTPReceive(FTP_SOCKET* ftpSocket, char* flashFilename, char* serverPath, ch
 			
 			// Set Params	
 			xFTPSocket = ftpSocket;
-			xFTPFlashFilename = flashFilename;
+			xFTPFlashLoc = flashLoc;
 			xFTPServPath = serverPath;
 			xFTPServFilename = serverFilename;
-
+			xFTPServFileSize = fileSize;
 			
 			xQueueSendToBack(xQueue,&mainOpStatus.Function,0);	//	Send COMMAND request to the stack
 			
@@ -345,18 +329,12 @@ int cFTPReceive()
 			//				"<xFTPFilename>,
 			//				0\r
 			
-			sprintf(msg2send, "AT+KFTPRCV=%d,\"/", xFTPSocket->number);
+			sprintf(msg2send, "AT+KFTPRCV=%d,\"\",\"%s\",\"%s\",0\r", xFTPSocket->number, xFTPServPath, xFTPServFilename);
 			GSMWrite(msg2send);
-			GSMWrite(xFTPFlashFilename);
-			GSMWrite("\",\"");
-			GSMWrite(xFTPServPath);
-			GSMWrite("\",\"");
-			GSMWrite(xFTPServFilename);
-			GSMWrite("\",0\r");
 			
 			// Start timeout count
 			tick = TickGetDiv64K(); // 1 tick every seconds
-			maxtimeout = 60;
+			maxtimeout = 180;
 			smInternal++;	
 				
 		case 2:
@@ -372,41 +350,13 @@ int cFTPReceive()
 			{
 				return mainOpStatus.ErrorCode;
 			}
-			else
-			{
-				int dummyLen = strlen(xFTPFlashFilename) + strlen(xFTPServPath) + strlen(xFTPServFilename) + 10;
-				while(dummyLen > 0)
-				{
-					GSMRead(cmdReply, 1);
-					dummyLen--;
-				}
-				cmdReply[0] = '\0';
-			}
 			
 		case 3:
-			// Get reply (\r\nOK\r\n)
+			// Get reply "\r\nCONNECT\r\n"
 			vTaskDelay(1);
-			// Get OK
-			sprintf(msg2send, "OK\r\n");
+			sprintf(msg2send, "\r\nCONNECT");
 			chars2read = 2;
-			countData = 2; // GSM buffer should be: <CR><LF>OK<CR><LF>
-			resCheck = CheckCmd(countData, chars2read, tick, cmdReply, msg2send, maxtimeout);
-			
-			CheckErr(resCheck, &smInternal, &tick);
-			
-			if(resCheck)
-			{
-				return mainOpStatus.ErrorCode;
-			}
-			
-			
-		case 4:
-			// Get reply "+KFTP_RCV_DONE: <session_id>"
-			vTaskDelay(1);
-			sprintf(msg2send, "+KFTP_RCV_DONE");
-			chars2read = 2;
-			countData = 2; // GSM buffer should be: <CR><LF>+KFTP_RCV_DONE: <session_id><CR><LF>
-			
+			countData = 2; // GSM buffer should be: <CR><LF>CONNECT<CR><LF>
 			resCheck = CheckCmd(countData, chars2read, tick, cmdReply, msg2send, maxtimeout);
 			
 			CheckErr(resCheck, &smInternal, &tick);
@@ -417,22 +367,39 @@ int cFTPReceive()
 			}
 			else
 			{
-				// Get FTP Socket last session_id:
-				char temp[25];
-				int res = getfield(':', '\r', 5, 1, cmdReply, temp, 500);
-				if(res != 1)
+				// Read data from FTP Socket
+				long rxCount = xFTPServFileSize;
+				int nCount = 0;
+
+				SPIFlashBeginWrite(xFTPFlashLoc);
+				gsmDebugPrint("\r\n");
+				
+				while(1)
 				{
-					// Execute Error Handler
-					gsmDebugPrint("Error in getfield for +KFTP_RCV_DONE socket\r\n");
-					break;
+					char tmp[1];
+					if (rxCount > 0 && GSMRead(tmp, 1) == 1) {
+						SPIFlashWrite((BYTE)tmp[0]);
+						rxCount--;
+						if (nCount++ == 1024) {
+							IOPut(p18, toggle);
+							nCount = 0;
+							gsmDebugPrint("#");
+						}
+						if (rxCount == 0)
+							break;
+					}
+					else if ((TickGetDiv64K() - tick) > maxtimeout) {
+						resCheck = -2;
+						break;
+					}
 				}
-				else
-				{
-					xFTPSocket->number = atoi(temp);
-				}
+		
+				CheckErr(resCheck, &smInternal, &tick);
+				if (resCheck)
+					return mainOpStatus.ErrorCode;
 			}
-			
-		case 5:
+#if 0			
+		case 4:
 			// ----------	FTP Close Socket Command ----------
 			sprintf(msg2send, "AT+KFTPCLOSE=%d\r", xFTPSocket->number);
 			GSMWrite(msg2send);
@@ -442,7 +409,7 @@ int cFTPReceive()
 			maxtimeout = 2;
 			smInternal++;	
 				
-		case 6:
+		case 5:
 			vTaskDelay(1);
 			// Check ECHO 
 			countData = 0;
@@ -456,11 +423,11 @@ int cFTPReceive()
 				return mainOpStatus.ErrorCode;
 			}
 			
-		case 7:
+		case 6:
 			// Get reply (\r\nOK\r\n)
 			vTaskDelay(1);
 			// Get OK
-			sprintf(msg2send, "OK\r\n");
+			sprintf(msg2send, "\r\nOK");
 			chars2read = 2;
 			countData = 2; // GSM buffer should be: <CR><LF>OK<CR><LF>
 			resCheck = CheckCmd(countData, chars2read, tick, cmdReply, msg2send, maxtimeout);
@@ -471,7 +438,7 @@ int cFTPReceive()
 			{
 				return mainOpStatus.ErrorCode;
 			}
-			
+#endif			
 		default:
 			break;
 	}

@@ -115,8 +115,11 @@ int main(void)
 
 	IOInit(p18, out);
 	IOInit(p20, out);
+	
 	IOPut(p18, on);
 	IOPut(p20, on);
+	IOPut(p19, on);
+	IOPut(p21, on);
 
 	// Initialize the RS232
 	RS232Off(3);

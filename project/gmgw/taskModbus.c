@@ -108,7 +108,6 @@ void TaskModbus()
 
 		if (init) {
 			do_poll();
-			//IOPut(p19, toggle);	
 		}
 
 		vTaskDelay(1);

@@ -4,6 +4,9 @@
 #include "RS485Helper.h"
 #include "ini.h"
 #include "mb.h"
+#include "hashes.h"
+
+extern int gsmDebugOn;
 
 xTaskHandle hModbusTask = NULL;
 xQueueHandle xQueueModbus;
@@ -11,8 +14,8 @@ xQueueHandle xQueueMqtt;
 
 #define DEVICE_ID_LENGTH 14
 
-#define MQTT_SERVER "119.97.184.140" //"m2m.eclipse.org"
-#define MQTT_PORT   1883//61613 //1883
+#define MQTT_SERVER "119.97.184.6"
+#define MQTT_PORT   1883
 #define MQTT_USER   "admin"
 #define MQTT_PASS   "password"
 
@@ -22,6 +25,7 @@ xQueueHandle xQueueMqtt;
 #define MQTT_TOPIC_CFG_RSP "/cfg/rsp"
 #define MQTT_TOPIC_CMD_REQ "/cmd/req"
 #define MQTT_TOPIC_CMD_RSP "/cmd/rsp"
+#define MQTT_TOPIC_UPGRADE "/upgrade"
 
 MQTTClient_t mqtt;
 TCPClient_t client;
@@ -40,6 +44,9 @@ const int port232 = 	3;
 
 sys_config_t config; 
 int init;
+
+static char fileName[32];
+static long fileSize;
 
 static int config_section_modbus(const char* name, const char* value)
 {
@@ -167,6 +174,89 @@ static void do_config(char *cfg, unsigned int len)
 	init = 1;
 }
 
+static int upgrade_handler(void* user, const char* section, const char* name, const char* value)
+{
+	UARTWrite(1, (char*)name);
+	UARTWrite(1,"=");
+	UARTWrite(1, (char*)value);
+	UARTWrite(1,"\r\n");
+
+	if (!strcmp(name, "file")) {
+		strcpy(fileName, value);
+	}
+	else if (!strcmp(name, "size")) {
+		fileSize = atol(value);
+	}
+	else {
+		return 0;  /* unknown section/name, error */
+	}
+    return 1;
+}
+
+static void do_upgrade(char *cfg, unsigned int len)
+{
+	fileSize = 256528;
+	
+	if (ini_parse(cfg, len, upgrade_handler, NULL) < 0) {
+		UARTWrite(1, "Invalid firmware info.\n");
+		return;
+	}
+
+	//	----- DOWNLOADING THE NEW FIRMWARE FILE	-----	
+	FTP_SOCKET ftpSocket;
+	ftpSocket.number = INVALID_SOCKET;
+	FTPConfig(&ftpSocket, "119.97.184.140", "user", "pass", 21);
+	while(LastExecStat() == OP_EXECUTION)
+		vTaskDelay(1);
+	if(LastExecStat() != OP_SUCCESS)
+	{
+		UARTWrite(1, "Errors on FTPConfig function!\r\n");
+		return;
+	}
+	
+	gsmDebugOn = 0;
+	FTPReceive(&ftpSocket, 0x1C0000, "/", fileName, fileSize);
+	while(LastExecStat() == OP_EXECUTION)
+		vTaskDelay(1);
+	if(LastExecStat() != OP_SUCCESS)
+		UARTWrite(1, "ERROR in download firmware!\r\n");
+	else {
+		UARTWrite(1, "OK - Firmware downloaded!\r\n");
+		//	MD5 INTEGRITY CHECK ON MEMORY
+		BYTE resmd[16];
+		HASH_SUM Hash;
+		UARTWrite(1, "\r\nCalculating md5 from memory...\r\n");
+		MD5Initialize (&Hash);
+		long unsigned int f_ind = 0;
+		BYTE b_read[2];
+		for (f_ind = 0; f_ind < 256512; f_ind++)
+		{
+			SPIFlashReadArray(0x1c0000+f_ind, b_read, 1);
+			HashAddData (&Hash, b_read, 1);
+		}
+		MD5Calculate(&Hash, resmd);
+		
+		int i;
+		BYTE md5[16];
+		SPIFlashReadArray(0x1c0000+256512, md5, 16);
+		
+		for (i=0; i<16; i++)
+		{
+			if (resmd[i] != md5[i])
+			{
+				UARTWrite(1, "ERROR - Firmware NOT valid!\r\n");
+				break;
+			}
+		}
+		if (i == 16) {
+			UARTWrite(1, "OK - Firmware valid!\n");
+			_erase_flash(0x29800);
+		}
+	}
+	vTaskDelay(100);
+	Reset();
+}
+
 static BOOL mqtt_send_msg(char* topic, uint8_t* payload, unsigned int length)
 {
 	char tp[MQTT_MAX_TOPIC_LEN + 1];
@@ -204,7 +294,62 @@ static void mqtt_callback(char* topic, uint8_t* payload, unsigned int length)
 		return;
 	}
 
+	if (!strcmp(topic + DEVICE_ID_LENGTH, MQTT_TOPIC_UPGRADE)) {
+		vTaskSuspend(hModbusTask);
+		do_upgrade((char*)payload, length);
+		vTaskResume(hModbusTask);
+		return;
+	}
+
 	UARTWrite(1, "Unknown topic!\r\n");
+}
+
+static void led_timer_init()
+{
+	T3CON = 0;  //turn off timer
+	T3CONbits.TCKPS = 3; //clock divider=256
+	PR3 = 62500UL / 10; // period=0.1 sec
+	TMR3 = 0; // init timer counter value
+	IFS0bits.T3IF = 0; //interrupt flag off
+	IEC0bits.T3IE = 1; //interrupt activated
+	T3CONbits.TON = 1; // timer start
+}
+
+static int gprs_rssi = 30;
+static int status_cnt = 0;
+unsigned int gprs_data = 0;
+unsigned int rs485_data = 0;
+
+void __attribute__ ((interrupt,no_auto_psv)) _T3Interrupt (void)
+{
+	TMR3 = 0; // counter reinitialized
+
+	if (gsmDebugOn) {
+		if (status_cnt == 0)
+			IOPut(p18, on);
+		if (status_cnt++ >= gprs_rssi) {
+			IOPut(p18, off);
+			status_cnt = 0;
+		}
+	}
+
+	if (gprs_data > 0) {
+		IOPut(p20, toggle);
+		if (gprs_data > 50)
+			gprs_data = 50;
+		if (--gprs_data == 0)
+			IOPut(p20, off);
+	}
+
+	if (rs485_data > 0) {
+		IOPut(p21, toggle);
+		if (rs485_data > 50)
+			rs485_data = 50;
+		if (--rs485_data == 0)
+			IOPut(p21, off);
+	}
+	
+	IFS0bits.T3IF = 0; // clear interrupt flag
 }
 
 void FlyportTask()
@@ -215,6 +360,9 @@ void FlyportTask()
 	unsigned long ad_lastime = 0;
 	char ad_info[80];
 	msg_hdr_t *msg = (msg_hdr_t *)(mqtt.buffer + 50);
+
+	SPIFlashInit();
+	led_timer_init();
 	
 	// Initialize the RS485
 	RS485Off(port485);
@@ -234,13 +382,20 @@ void FlyportTask()
 	// Wait for GSM Connection successfull
     while((LastConnStatus() != REG_SUCCESS) && (LastConnStatus() != ROAMING)) {
     	vTaskDelay(20);
-    	IOPut(p21, toggle);
+		IOPut(p18, toggle);
+		IOPut(p20, toggle);
+		IOPut(p19, toggle);
+		IOPut(p21, toggle);
     }
-    IOPut(p21, on);
+	
+	IOPut(p18, off);
+	IOPut(p20, off);
+	IOPut(p19, off);
+	IOPut(p21, off);
 	vTaskDelay(20);
     UARTWrite(1,"Registered on network!\r\n");
 
-	sprintf(ad_info, "[gw]\nmft=GeeLink\nmdl=GPRS\nsn=%s\nhw=1.0\nsw=1.0", GSMGetIMEI());
+	sprintf(ad_info, "[gw]\nmft=GeeLink\nmdl=GPRS-MODBUS\nsn=%s\nhw=2.0\nsw=1.2", GSMGetIMEI());
 
 	TCPClient_init(&client);
 	MQTTClient_init(&mqtt, MQTT_SERVER, MQTT_PORT, mqtt_callback, &client);
@@ -262,18 +417,20 @@ void FlyportTask()
 			char topic[MQTT_MAX_TOPIC_LEN + 1];
 			sprintf(topic, "%s%s", devid, MQTT_TOPIC_CFG_REQ);
 			MQTTClient_subscribe(&mqtt, topic);
-			UARTWrite(1,"Subscribed mqtt topic: ");
+			UARTWrite(1,"Subscribed mqtt topics:\r\n");
 			UARTWrite(1, topic);
 			UARTWrite(1,"\r\n");
 			sprintf(topic, "%s%s", devid, MQTT_TOPIC_CMD_REQ);
 			MQTTClient_subscribe(&mqtt, topic);
-			UARTWrite(1,"Subscribed mqtt topic: ");
+			UARTWrite(1, topic);
+			UARTWrite(1,"\r\n");
+			sprintf(topic, "%s%s", devid, MQTT_TOPIC_UPGRADE);
+			MQTTClient_subscribe(&mqtt, topic);
 			UARTWrite(1, topic);
 			UARTWrite(1,"\r\n");
 		}
 		else if (!init) {
 			if (tickGetSeconds() > (ad_lastime + 30)) {
-				IOPut(p21, toggle);
 				mqtt_send_msg(MQTT_TOPIC_ADVT, (uint8_t*)ad_info, strlen(ad_info));
 				ad_lastime = tickGetSeconds();
 			}
@@ -296,7 +453,8 @@ void FlyportTask()
 			while(LastExecStat() == OP_EXECUTION)
 				vTaskDelay(1);
 			char rssi[12];
-			sprintf(rssi, "RSSI:%d\r\n", GSMGetRSSI());
+			gprs_rssi = GSMGetRSSI();
+			sprintf(rssi, "RSSI:%d\r\n", gprs_rssi);
 			UARTWrite(1, rssi);	
 			rssi_lastime = tickGetSeconds();
 		}

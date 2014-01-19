@@ -97,6 +97,8 @@ xMBPortSerialInit( UCHAR ucPORT, ULONG ulBaudRate, UCHAR ucDataBits, eMBParity e
     return TRUE;
 }
 
+extern unsigned int rs485_data;
+
 BOOL
 xMBPortSerialPutByte( CHAR ucByte )
 {
@@ -106,6 +108,7 @@ xMBPortSerialPutByte( CHAR ucByte )
 	while(BusyUART2());
 	WriteUART2((unsigned int)ucByte);
 
+	rs485_data++;
     RS232WriteCh(3, ucByte);
     return TRUE;
 }
@@ -119,6 +122,7 @@ xMBPortSerialGetByte( CHAR * pucByte )
 	while(!DataRdyUART2());
 	*pucByte = (CHAR)ReadUART2();
 
+	rs485_data++;
     RS232WriteCh(3, *pucByte);
     return TRUE;
 }
@@ -132,8 +136,8 @@ xMBPortSerialGetByte( CHAR * pucByte )
  #if 0
 void __attribute__((interrupt, no_auto_psv)) _U2TXInterrupt(void)
 {
-	U2TX_Clear_Intr_Status_Bit;
     pxMBFrameCBTransmitterEmpty(  );
+	U2TX_Clear_Intr_Status_Bit;
 }
 #endif
 /* Create an interrupt handler for the receive interrupt for your target
@@ -143,6 +147,6 @@ void __attribute__((interrupt, no_auto_psv)) _U2TXInterrupt(void)
  */
 void __attribute__((interrupt, no_auto_psv)) _U2RXInterrupt(void)
 {
-	U2RX_Clear_Intr_Status_Bit;
     pxMBFrameCBByteReceived(  );
+	U2RX_Clear_Intr_Status_Bit;
 }

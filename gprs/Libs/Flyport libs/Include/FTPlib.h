@@ -67,7 +67,7 @@ extern portBASE_TYPE xStatus;
 
 void FTPConfig(FTP_SOCKET* ftpSocket, char* serverName, char* login, char* password, WORD portNumber);
 int cFTPConfig();
-void FTPReceive(FTP_SOCKET* sock, char* flashFilename, char* serverPath, char* serverFilename);
+void FTPReceive(FTP_SOCKET* sock, unsigned long flashLoc, char* serverPath, char* serverFilename, long fileSize);
 int cFTPReceive();
 void FTPSend(FTP_SOCKET* sock, char* flashFilename, char* serverPath, char* serverFilename, BOOL appendMode);
 int cFTPSend();

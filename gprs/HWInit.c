@@ -108,9 +108,6 @@ void HWInit(int conf)
         HILO_RESET_ODC      = 1;
         HILO_RESET_IO       = 1;
 
-        HILO_GPIO1_TRIS     = 1;
-        HILO_GPIO2_TRIS     = 1;
-        HILO_GPIO3_TRIS     = 1;
         HILO_VGPIO_TRIS     = 1;
 
         HILO_RESET_TRIS  = 0;
@@ -125,6 +122,10 @@ void HWInit(int conf)
         RPINR27bits.U4RXR = 21;                 // Assign RP21 to U4RX (input)
         RPINR27bits.U4CTSR = 26;                // Assign RP26 to U4CTS (input)
         
+        // Configure SPI3 PPS pins for flash
+        RPOR12bits.RP25R = 33;                                  // Assign SCK3 to RP25 (output)
+        RPOR6bits.RP13R = 32;                                   // Assign SDO3 to RP13 (output)
+        RPINR28bits.SDI3R = 28;                                 // Assign RP28 to SDI3 (input)
 
 		// Configure UART 1 pins
 		RPINR18bits.U1RXR = 24;					// Assign RP24 to U1RX (input)

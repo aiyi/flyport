@@ -47,6 +47,7 @@ vMBPortTimersEnable(  )
 	PR4 = period; //limit to raise interrupt=62500
 	TMR4 = 0; // init timer counter value
 	// interrupt config
+	IPC6bits.T4IP = 1; //Setup interrupt for desired priority level
 	IFS1bits.T4IF = 0; //interrupt flag off
 	IEC1bits.T4IE = 1; //interrupt activated
 	T4CONbits.TON = 1; // timer start
@@ -65,7 +66,7 @@ vMBPortTimersDisable(  )
  */
 void __attribute__ ((interrupt,no_auto_psv)) _T4Interrupt (void)
 {
-	IFS1bits.T4IF = 0;
 	pxMBPortCBTimerExpired(  );
+	IFS1bits.T4IF = 0;
 }
 

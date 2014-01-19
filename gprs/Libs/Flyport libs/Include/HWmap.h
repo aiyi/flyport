@@ -130,17 +130,7 @@
 	#define HILO_RTS_TRIS           (TRISGbits.TRISG9)
 	#define HILO_RTS_IO             (LATGbits.LATG9)
 
-    // HILO GPIOs
-    #define HILO_GPIO1_TRIS         (TRISDbits.TRISD4)
-    #define HILO_GPIO1_PORT         (PORTDbits.RD4)
-    #define HILO_GPIO1_LAT          (LATDbits.LATD4)
-    #define HILO_GPIO2_TRIS         (TRISBbits.TRISB4)
-    #define HILO_GPIO2_PORT         (PORTBbits.RB4)
-    #define HILO_GPIO2_LAT          (LATBbits.LATB4)
-    #define HILO_GPIO3_TRIS         (TRISBbits.TRISB2)
-    #define HILO_GPIO3_PORT         (PORTBbits.RB2)
-    #define HILO_GPIO3_LAT          (LATBbits.LATB2)
-    
+    // HILO GPIOs    
 	#define HILO_VGPIO_TRIS         (TRISDbits.TRISD5)
     #define HILO_VGPIO_PORT         (PORTDbits.RD5)
     #define HILO_VGPIO_LAT          (LATDbits.LATD5)
@@ -150,6 +140,20 @@
 	#define HILO_POK_TRIS           (TRISEbits.TRISE7)
 	#define HILO_POK_IO             (PORTEbits.RE7)
     #define HILO_POK_ODC            (ODCEbits.ODE7)
+
+	#define SPIFLASH_CS_TRIS		(TRISDbits.TRISD6)
+	#define SPIFLASH_CS_IO			(LATDbits.LATD6)
+	#define SPIFLASH_SCK_TRIS		(TRISDbits.TRISD4)
+	#define SPIFLASH_SDI_TRIS		(TRISBbits.TRISB4)
+	#define SPIFLASH_SDI_IO 		(PORTBbits.RB4)
+	#define SPIFLASH_SDO_TRIS		(TRISBbits.TRISB2)
+	#define SPIFLASH_SPI_IF 		(IFS5bits.SPI3IF)
+	#define SPIFLASH_SSPBUF 		(SPI3BUF)
+	#define SPIFLASH_SPICON1		(SPI3CON1)
+	#define SPIFLASH_SPICON1bits	(SPI3CON1bits)
+	#define SPIFLASH_SPICON2		(SPI3CON2)
+	#define SPIFLASH_SPISTAT		(SPI3STAT)
+	#define SPIFLASH_SPISTATbits	(SPI3STATbits)
 
 #endif
 

@@ -111,6 +111,8 @@ OpStat			mainOpStatus;
 extern int 	mainGSMStateMachine;
 extern FTP_SOCKET* xFTPSocket;
 
+int gsmDebugOn=1;
+
 int EventType=0;
 int HiloComTest();
 int CheckEcho(int countData, const DWORD tick, char* reply, const char* msg, const BYTE maxtimeout);
@@ -638,11 +640,13 @@ int HiloStdModeOn(long int baud)
 
 char rxChar[51];
 int rxIdx = 0;
+extern unsigned int gprs_data;
 
 // UART4 Rx Interrupt to store received chars from modem
 void GSMRxInt()
 {
 	int port = HILO_UART - 1;
+	gprs_data++;
 	
 	while ((*USTAs[port] & 1)!=0)
 	{
@@ -700,6 +704,7 @@ void GSMWrite(char* data2wr)
         {
             while((*USTAs[port] & 512)>0);	// waits if the buffer is full 
             *UTXREGs[port] = *data2wr++;         // sends char to TX reg
+            gprs_data++;
         }
     }
     else
@@ -708,6 +713,7 @@ void GSMWrite(char* data2wr)
         {
             while((*USTAs[port] & 512)>0);      // sends char to TX reg
             *UTXREGs[port] = *data2wr++ & 0xFF;  // sends char to TX reg
+            gprs_data++;
         }
     }
     HILO_RTS_IO = 0;
@@ -715,6 +721,7 @@ void GSMWrite(char* data2wr)
 
 void GSMWriteCh(char chr)
 {
+	gprs_data++;
 	RS232WriteCh(3, chr);
 
 	int port = HILO_UART-1;
@@ -783,7 +790,8 @@ int GSMRead(char *towrite , int count)
 	{
         *(towrite+irx) = GSMBuffer[bufind_r];
 
-		RS232WriteCh(3, GSMBuffer[bufind_r]);
+		if (gsmDebugOn)
+			RS232WriteCh(3, GSMBuffer[bufind_r]);
 
 		if (bufind_r == (GSM_BUFFER_SIZE-1))
 			bufind_r = 0;
