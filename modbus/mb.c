@@ -423,7 +423,7 @@ void eMBStopTxRx( void )
 	pvMBFrameStartCur();
 }
 
-eMBErrorCode eMBMReadHoldingRegisters(UCHAR ucSlaveAddress, USHORT usRegStartAddress, 
+eMBErrorCode eMBMReadRegisters(UCHAR ucSlaveAddress, UCHAR ucFunCode, USHORT usRegStartAddress, 
                         UCHAR ubNRegs, UCHAR **pucRcvFrame, USHORT *pusLength) 
 {
     eMBErrorCode eStatus;
@@ -432,7 +432,7 @@ eMBErrorCode eMBMReadHoldingRegisters(UCHAR ucSlaveAddress, USHORT usRegStartAdd
 	UCHAR *ucMBFrame = ( UCHAR *) &ucMBBuf[EXTRA_HEAD_ROOM + 1];
 
     /* make up request frame */     
-    ucMBFrame[0] = MB_FUNC_READ_HOLDING_REGISTER;
+    ucMBFrame[0] = ucFunCode;
     ucMBFrame[1] = (UCHAR)(usRegStartAddress >> 8);
     ucMBFrame[2] = (UCHAR)(usRegStartAddress);
     ucMBFrame[3] = (UCHAR)(ubNRegs >> 8);
@@ -464,7 +464,7 @@ eMBErrorCode eMBMReadHoldingRegisters(UCHAR ucSlaveAddress, USHORT usRegStartAdd
 			*pucRcvFrame -= 1; // back to slave address
 			*pusLength += 1;
 			
-            if ((*pucRcvFrame)[1] == MB_FUNC_READ_HOLDING_REGISTER 
+            if ((*pucRcvFrame)[1] == ucFunCode 
 					&& (*pucRcvFrame)[2] == 2*ubNRegs)
 				return MB_ENOERR;
 			else

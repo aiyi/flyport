@@ -395,7 +395,7 @@ void FlyportTask()
 	vTaskDelay(20);
     UARTWrite(1,"Registered on network!\r\n");
 
-	sprintf(ad_info, "[gw]\nmft=GeeLink\nmdl=GPRS-MODBUS\nsn=%s\nhw=2.0\nsw=1.2", GSMGetIMEI());
+	sprintf(ad_info, "[gw]\nmft=GeeLink\nmdl=GPRS-MODBUS\nsn=%s\nhw=2.0\nsw=1.3", GSMGetIMEI());
 
 	TCPClient_init(&client);
 	MQTTClient_init(&mqtt, MQTT_SERVER, MQTT_PORT, mqtt_callback, &client);

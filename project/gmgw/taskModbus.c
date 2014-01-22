@@ -32,7 +32,7 @@ static eMBErrorCode poll_slave(UCHAR slaveid, poll_cfg_t *task)
 	USHORT usLength;
 
 	UARTWrite(1, "Modbus polling...\r\n");
-	eStatus = eMBMReadHoldingRegisters(slaveid, task->regStart, task->nRegs, &ucRcvFrame, &usLength);
+	eStatus = eMBMReadRegisters(slaveid, task->funCode, task->regStart, task->nRegs, &ucRcvFrame, &usLength);
 	
 	if(eStatus == MB_ENOERR || eStatus == MB_ENOREG) {
 		UCHAR *data = ucRcvFrame - 2;

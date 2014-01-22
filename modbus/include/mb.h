@@ -413,7 +413,7 @@ eMBErrorCode    eMBRegDiscreteCB( UCHAR * pucRegBuffer, USHORT usAddress,
 
 // Master functions
 void eMBStopTxRx(void);
-eMBErrorCode eMBMReadHoldingRegisters(UCHAR ucSlaveAddress, USHORT usRegStartAddress, 
+eMBErrorCode eMBMReadRegisters(UCHAR ucSlaveAddress, UCHAR ucFunCode, USHORT usRegStartAddress, 
                         UCHAR ubNRegs, UCHAR **pucRcvFrame, USHORT *pusLength);
 eMBErrorCode eMBMSendData(UCHAR *data, USHORT len, UCHAR **pucRcvFrame, USHORT *pusLength);
 
