@@ -86,7 +86,8 @@ PR_BEGIN_EXTERN_C
 {
     MB_RTU,                     /*!< RTU transmission mode. */
     MB_ASCII,                   /*!< ASCII transmission mode. */
-    MB_TCP                      /*!< TCP mode. */
+    MB_TCP,                      /*!< TCP mode. */
+	MB_POWERONE					/*!< PowerOne mode. */
 } eMBMode;
 
 /*! \ingroup modbus

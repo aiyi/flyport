@@ -54,6 +54,9 @@
 #if MB_TCP_ENABLED == 1
 #include "mbtcp.h"
 #endif
+#if MB_POWERONE_ENABLED == 1
+#include "powerone.h"
+#endif
 
 #ifndef MB_PORT_HAS_CLOSE
 #define MB_PORT_HAS_CLOSE 0
@@ -174,6 +177,20 @@ eMBInit( eMBMode eMode, UCHAR ucSlaveAddress, UCHAR ucPort, ULONG ulBaudRate, UC
 
             eStatus = eMBASCIIInit( ucMBAddress, ucPort, ulBaudRate, ucData, eParity, ucStop );
             break;
+#endif
+#if MB_POWERONE_ENABLED > 0
+		case MB_POWERONE:
+			pvMBFrameStartCur = ePoweroneStart;
+			pvMBFrameStopCur = ePoweroneStop;
+			peMBFrameSendCur = ePoweroneSend;
+			peMBFrameReceiveCur = ePoweroneReceive;
+			pvMBFrameCloseCur = MB_PORT_HAS_CLOSE ? vMBPortClose : NULL;
+			pxMBFrameCBByteReceived = xPoweroneReceiveFSM;
+			pxMBFrameCBTransmitterEmpty = xPoweroneTransmitFSM;
+			pxMBPortCBTimerExpired = xPoweroneTimerT35Expired;
+
+			eStatus = ePoweroneInit( ucMBAddress, ucPort, ulBaudRate, ucData, eParity, ucStop );
+			break;
 #endif
         default:
             eStatus = MB_EINVAL;
@@ -431,6 +448,11 @@ eMBErrorCode eMBMReadRegisters(UCHAR ucSlaveAddress, UCHAR ucFunCode, USHORT usR
     UCHAR ucRcvAddress;
 	UCHAR *ucMBFrame = ( UCHAR *) &ucMBBuf[EXTRA_HEAD_ROOM + 1];
 
+	if (eMBCurrentMode == MB_POWERONE) {
+		eStatus = ePoweroneReadRegisters(ucSlaveAddress, usRegStartAddress, ubNRegs, pucRcvFrame, pusLength);
+		return eStatus;
+	}
+
     /* make up request frame */     
     ucMBFrame[0] = ucFunCode;
     ucMBFrame[1] = (UCHAR)(usRegStartAddress >> 8);
@@ -482,7 +504,12 @@ eMBErrorCode eMBMSendData(UCHAR *data, USHORT len, UCHAR **pucRcvFrame, USHORT *
     UCHAR ucRcvAddress;
 	UCHAR ucSlaveAddress = *data;
 	UCHAR *ucMBFrame = data + 1;
-    
+
+	if (eMBCurrentMode == MB_POWERONE) {
+		eStatus = ePoweroneSendData(data, len, pucRcvFrame, pusLength);
+		return eStatus;
+	}
+	
     /* send request frame to slave device */
     if (eMBCurrentMode == MB_ASCII)
         eStatus = eMBASCIISend( ucSlaveAddress, ucMBFrame, len - 1 );

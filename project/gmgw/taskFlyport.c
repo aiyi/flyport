@@ -53,6 +53,10 @@ static int config_section_modbus(const char* name, const char* value)
 	if (!strcmp(name, "mode")) {
 		if (!strcmp(value, "ascii"))
 			config.mode = MB_ASCII;
+		else if (!strcmp(value, "rtu"))
+			config.mode = MB_RTU;
+		else if (!strcmp(value, "powerone"))
+			config.mode = MB_POWERONE;
 		else
 			config.mode = MB_RTU;
 	}
